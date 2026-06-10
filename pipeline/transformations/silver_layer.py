@@ -1,6 +1,7 @@
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 
+
 @dp.table(
     name="biap.default.silver_nyc_taxi_trips",
     comment="Cleaned NYC taxi trip data with quality flags and derived metrics"
@@ -8,14 +9,14 @@ from pyspark.sql import functions as F
 def silver_nyc_taxi_trips():
     """
     Silver layer: Clean invalid data
-    
+
     Data Quality Rules:
     - REMOVE: Negative fares, zero distance, zero fares (invalid data)
     - ADD: Derived metrics (trip duration, average speed, time of day)
     """
     # Read from Bronze layer
-    df = spark.read.table("biap.default.bronze_nyc_taxi_trips")
-    
+    df = spark.read.table("biap.default.bronze_nyc_taxi_trips")  # noqa: F821
+
     # Calculate derived metrics
     df = df.withColumn(
         "trip_duration_minutes",
