@@ -1,0 +1,28 @@
+bundle:
+  name: nyc-taxi
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: biap
+  schema:
+    default: default
+  warehouse_id:
+    lookup:
+      warehouse: 'Serverless Starter Warehouse'
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      catalog: biap
+      schema: dev
+    
+  prod:
+    mode: production
+    variables:
+      catalog: biap
+      schema: prod
