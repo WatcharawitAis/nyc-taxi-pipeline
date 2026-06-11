@@ -12,6 +12,8 @@ variables:
   warehouse_id:
     lookup:
       warehouse: 'Serverless Starter Warehouse'
+  pipeline_development:
+    default: true
 
 targets:
   dev:
@@ -20,9 +22,11 @@ targets:
     variables:
       catalog: biap
       schema: dev
+      pipeline_development: true
     
   prod:
     mode: production
     variables:
       catalog: biap
       schema: prod
+      pipeline_development: false
