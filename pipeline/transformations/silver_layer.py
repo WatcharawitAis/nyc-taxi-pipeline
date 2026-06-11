@@ -13,6 +13,7 @@ def silver_nyc_taxi_trips():
     Data Quality Rules:
     - REMOVE: Negative fares, zero distance, zero fares (invalid data)
     - ADD: Derived metrics (trip duration, average speed, time of day)
+    - CAST: Zip codes to string (preserve leading zeros)
     """
     # Read from Bronze layer
     df = spark.read.table("bronze_nyc_taxi_trips")  # noqa: F821
@@ -20,6 +21,10 @@ def silver_nyc_taxi_trips():
     # Calculate derived metrics using withColumns for better performance
     df = df.withColumns(
         {
+            # Cast zip codes to string to preserve leading zeros
+            "pickup_zip": F.col("pickup_zip").cast("string"),
+            "dropoff_zip": F.col("dropoff_zip").cast("string"),
+            # Derived time metrics
             "trip_duration_minutes": (
                 F.unix_timestamp("tpep_dropoff_datetime")
                 - F.unix_timestamp("tpep_pickup_datetime")
