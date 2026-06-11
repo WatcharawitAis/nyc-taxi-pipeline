@@ -13,9 +13,9 @@ from pyspark.sql import functions as F
 def day_of_week_metrics():
     # Aggregate by numeric day of week
     sliver = (
-        spark.read.table("biap.default.silver_nyc_taxi_trips")
+        spark.read.table("biap.default.silver_nyc_taxi_trips")  # noqa: F821
         .groupBy("pickup_day_of_week")
-        .agg(  # noqa: F821, E501
+        .agg(
             F.count(F.lit(1)).alias("total_rides"),
             F.sum("fare_amount").alias("total_fare"),
             F.avg("trip_distance").alias("avg_distance"),
