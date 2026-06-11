@@ -1,0 +1,25 @@
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      name: NYC Taxi Data Pipeline - ${bundle.target}
+      
+      catalog: ${var.catalog}
+      target: ${var.schema}
+      
+      libraries:
+        - glob:
+            include: ../pipeline/transformations/**
+      
+      root_path: ../pipeline
+      
+      serverless: true
+      
+      continuous: false
+      development: true
+      photon: true
+      
+      channel: current
+      
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
