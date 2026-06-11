@@ -3,7 +3,10 @@ from pyspark import pipelines as dp
 
 @dp.table(
     name="biap.default.bronze_nyc_taxi_trips",
-    comment="Raw NYC taxi trip data ingested from samples.nyctaxi.trips"
+    comment="Raw NYC taxi trip data ingested from samples.nyctaxi.trips",
 )
 def bronze_nyc_taxi_trips():
-    return spark.read.table("samples.nyctaxi.trips")  # noqa: F821
+    """
+    Returns the raw NYC taxi trip data ingested from samples.nyctaxi.trips
+    """
+    return spark.read.table("samples.nyctaxi.trips")
