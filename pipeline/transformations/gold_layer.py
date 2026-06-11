@@ -6,14 +6,14 @@ from pyspark.sql import functions as F
 # MATERIALIZED VIEW: Day of Week Metrics
 # ==========================================================================
 @dp.materialized_view(
-    name="biap.default.day_of_week_metrics",
+    name="day_of_week_metrics",
     comment="Daily aggregated metrics for the number of rides, "
     "average distance, average fare, and average speed for each day of the week.",
 )
 def day_of_week_metrics():
     # Aggregate by numeric day of week
     sliver = (
-        spark.read.table("biap.default.silver_nyc_taxi_trips")  # noqa: F821
+        spark.read.table("silver_nyc_taxi_trips")  # noqa: F821
         .groupBy("pickup_day_of_week")
         .agg(
             F.count(F.lit(1)).alias("total_rides"),
