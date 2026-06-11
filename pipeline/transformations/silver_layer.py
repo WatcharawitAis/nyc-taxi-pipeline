@@ -3,7 +3,7 @@ from pyspark.sql import functions as F
 
 
 @dp.table(
-    name="biap.default.silver_nyc_taxi_trips",
+    name="silver_nyc_taxi_trips",
     comment="Cleaned NYC taxi trip data with quality flags and derived metrics",
 )
 def silver_nyc_taxi_trips():
@@ -15,7 +15,7 @@ def silver_nyc_taxi_trips():
     - ADD: Derived metrics (trip duration, average speed, time of day)
     """
     # Read from Bronze layer
-    df = spark.read.table("biap.default.bronze_nyc_taxi_trips")  # noqa: F821
+    df = spark.read.table("bronze_nyc_taxi_trips")  # noqa: F821
 
     # Calculate derived metrics using withColumns for better performance
     df = df.withColumns(
