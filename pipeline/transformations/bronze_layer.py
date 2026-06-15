@@ -1,6 +1,5 @@
 import dlt
 
-
 @dlt.table(
     name="bronze_nyc_taxi_trips",
     comment="Raw NYC taxi trip data ingested from samples.nyctaxi.trips",
