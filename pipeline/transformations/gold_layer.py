@@ -101,6 +101,7 @@ def sort_by_day_of_week(df, day_col="day_of_week"):
 
 # Only define DLT views when dlt module is available (Databricks Runtime)
 
+
 if dlt is not None:
 
     @dlt.view(
