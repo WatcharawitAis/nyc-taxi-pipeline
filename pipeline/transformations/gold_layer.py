@@ -11,16 +11,18 @@ from pyspark.sql import functions as F
 # PURE TRANSFORMATION FUNCTIONS (Testable)
 # ========================================
 
+
 def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
     """
     Converts numeric day of week (1-7) to day name.
-    
+
     Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
     """
-    # ใช้ F.expr() แทน chained .when() เพื่อหลีกเลี่ยง lint warning
-    return df.withColumn(
-        "day_name",
-        F.expr(f"""
+    # Use .withColumns() instead of .withColumn() for Spark Connect compatibility
+    return df.withColumns(
+        {
+            "day_name": F.expr(
+                f"""
             CASE {day_col}
                 WHEN 1 THEN 'Sunday'
                 WHEN 2 THEN 'Monday'
@@ -30,25 +32,27 @@ def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
                 WHEN 6 THEN 'Friday'
                 WHEN 7 THEN 'Saturday'
             END
-        """)
+        """
+            )
+        }
     )
 
 
 def aggregate_by_day_of_week(df, group_col="pickup_day_of_week"):
     """
     Aggregates trip metrics by day of week.
-    
+
     Calculates:
     - total_rides: Count of trips
     - total_fare: Sum of all fares
     - avg_distance: Average trip distance
     - avg_fare: Average fare amount
     - avg_speed: Average speed
-    
+
     Args:
         df: Input DataFrame from silver layer
         group_col: Column to group by
-    
+
     Returns:
         Aggregated DataFrame
     """
@@ -64,11 +68,11 @@ def aggregate_by_day_of_week(df, group_col="pickup_day_of_week"):
 def round_metric_columns(df, precision=2):
     """
     Rounds numeric metric columns to specified precision.
-    
+
     Args:
         df: Input DataFrame
         precision: Number of decimal places
-    
+
     Returns:
         DataFrame with rounded metrics
     """
@@ -86,11 +90,11 @@ def round_metric_columns(df, precision=2):
 def sort_by_day_of_week(df, day_col="day_of_week"):
     """
     Sorts DataFrame by day of week (1=Sunday to 7=Saturday).
-    
+
     Args:
         df: Input DataFrame
         day_col: Column name to sort by
-    
+
     Returns:
         Sorted DataFrame
     """
@@ -103,6 +107,7 @@ def sort_by_day_of_week(df, day_col="day_of_week"):
 
 # Only define DLT views when dlt module is available (Databricks Runtime)
 if dlt is not None:
+
     @dlt.view(
         name="day_of_week_metrics",
         comment="Daily aggregated metrics for the number of rides, "
@@ -111,9 +116,9 @@ if dlt is not None:
     def day_of_week_metrics():
         """
         Gold layer: Aggregated metrics by day of week
-        
+
         Provides business-ready metrics grouped by day of week with readable day names.
-        
+
         Transformations applied:
         1. Aggregate trips by day of week
         2. Convert day numbers to names
@@ -122,11 +127,11 @@ if dlt is not None:
         """
         # Read from Silver layer
         df = dlt.read("silver_nyc_taxi_trips")
-        
+
         # Apply transformations using testable functions
         df = aggregate_by_day_of_week(df)
         df = convert_day_number_to_name(df)
         df = round_metric_columns(df)
         df = sort_by_day_of_week(df)
-        
+
         return df
