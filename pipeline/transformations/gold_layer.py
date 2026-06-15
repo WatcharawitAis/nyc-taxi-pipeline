@@ -1,47 +1,125 @@
-from pyspark import pipelines as dp
+import dlt
 from pyspark.sql import functions as F
 
 
-# ==========================================================================
-# MATERIALIZED VIEW: Day of Week Metrics
-# ==========================================================================
-@dp.materialized_view(
+# ========================================
+# PURE TRANSFORMATION FUNCTIONS (Testable)
+# ========================================
+
+def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
+    """
+    Converts numeric day of week (1-7) to day name.
+    
+    Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
+    """
+    # ใช้ F.expr() แทน chained .when() เพื่อหลีกเลี่ยง lint warning
+    return df.withColumn(
+        "day_name",
+        F.expr(f"""
+            CASE {day_col}
+                WHEN 1 THEN 'Sunday'
+                WHEN 2 THEN 'Monday'
+                WHEN 3 THEN 'Tuesday'
+                WHEN 4 THEN 'Wednesday'
+                WHEN 5 THEN 'Thursday'
+                WHEN 6 THEN 'Friday'
+                WHEN 7 THEN 'Saturday'
+            END
+        """)
+    )
+
+
+def aggregate_by_day_of_week(df, group_col="pickup_day_of_week"):
+    """
+    Aggregates trip metrics by day of week.
+    
+    Calculates:
+    - total_rides: Count of trips
+    - total_fare: Sum of all fares
+    - avg_distance: Average trip distance
+    - avg_fare: Average fare amount
+    - avg_speed: Average speed
+    
+    Args:
+        df: Input DataFrame from silver layer
+        group_col: Column to group by
+    
+    Returns:
+        Aggregated DataFrame
+    """
+    return df.groupBy(group_col).agg(
+        F.count(F.lit(1)).alias("total_rides"),
+        F.sum("fare_amount").alias("total_fare"),
+        F.avg("trip_distance").alias("avg_distance"),
+        F.avg("fare_amount").alias("avg_fare"),
+        F.avg("avg_speed_mph").alias("avg_speed"),
+    )
+
+
+def round_metric_columns(df, precision=2):
+    """
+    Rounds numeric metric columns to specified precision.
+    
+    Args:
+        df: Input DataFrame
+        precision: Number of decimal places
+    
+    Returns:
+        DataFrame with rounded metrics
+    """
+    return df.select(
+        F.col("pickup_day_of_week").alias("day_of_week"),
+        F.col("day_name"),
+        F.col("total_rides"),
+        F.col("total_fare"),
+        F.round(F.col("avg_distance"), precision).alias("avg_distance"),
+        F.round(F.col("avg_fare"), precision).alias("avg_fare"),
+        F.round(F.col("avg_speed"), precision).alias("avg_speed"),
+    )
+
+
+def sort_by_day_of_week(df, day_col="day_of_week"):
+    """
+    Sorts DataFrame by day of week (1=Sunday to 7=Saturday).
+    
+    Args:
+        df: Input DataFrame
+        day_col: Column name to sort by
+    
+    Returns:
+        Sorted DataFrame
+    """
+    return df.orderBy(day_col)
+
+
+# ========================================
+# DLT VIEW DEFINITION
+# ========================================
+
+@dlt.view(
     name="day_of_week_metrics",
     comment="Daily aggregated metrics for the number of rides, "
     "average distance, average fare, and average speed for each day of the week.",
 )
 def day_of_week_metrics():
-    # Aggregate by numeric day of week
-    sliver = (
-        spark.read.table("silver_nyc_taxi_trips")  # noqa: F821
-        .groupBy("pickup_day_of_week")
-        .agg(
-            F.count(F.lit(1)).alias("total_rides"),
-            F.sum("fare_amount").alias("total_fare"),
-            F.avg("trip_distance").alias("avg_distance"),
-            F.avg("fare_amount").alias("avg_fare"),
-            F.avg("avg_speed_mph").alias("avg_speed"),
-        )
-    )
-
-    # Convert numeric day (1=Sunday, 2=Monday, ..., 7=Saturday) to day names
-    result = sliver.withColumn(
-        "day_name",
-        F.when(F.col("pickup_day_of_week") == 1, "Sunday")
-        .when(F.col("pickup_day_of_week") == 2, "Monday")
-        .when(F.col("pickup_day_of_week") == 3, "Tuesday")
-        .when(F.col("pickup_day_of_week") == 4, "Wednesday")
-        .when(F.col("pickup_day_of_week") == 5, "Thursday")
-        .when(F.col("pickup_day_of_week") == 6, "Friday")
-        .when(F.col("pickup_day_of_week") == 7, "Saturday"),
-    )
-
-    return result.select(
-        F.col("pickup_day_of_week").alias("day_of_week"),
-        F.col("day_name"),
-        F.col("total_rides"),
-        F.col("total_fare"),
-        F.round(F.col("avg_distance"), 2).alias("avg_distance"),
-        F.round(F.col("avg_fare"), 2).alias("avg_fare"),
-        F.round(F.col("avg_speed"), 2).alias("avg_speed"),
-    ).orderBy("day_of_week")
+    """
+    Gold layer: Aggregated metrics by day of week
+    
+    Provides business-ready metrics grouped by day of week with readable day names.
+    
+    Transformations applied:
+    1. Aggregate trips by day of week
+    2. Convert day numbers to names
+    3. Round metrics to 2 decimal places
+    4. Sort by day of week
+    """
+    # Read from Silver layer
+    df = dlt.read("silver_nyc_taxi_trips")
+    
+    # Apply transformations using testable functions
+    df = aggregate_by_day_of_week(df)
+    df = convert_day_number_to_name(df)
+    df = round_metric_columns(df)
+    df = sort_by_day_of_week(df)
+    
+    return df
