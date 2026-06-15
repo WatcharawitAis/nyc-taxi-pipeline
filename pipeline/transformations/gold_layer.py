@@ -12,23 +12,16 @@ def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
 
     Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
     """
-    # Use .withColumns() instead of .withColumn() for Spark Connect compatibility
-
     return df.withColumns(
         {
-            "day_name": F.expr(
-                f"""
-            CASE {day_col}
-                WHEN 1 THEN 'Sunday'
-                WHEN 2 THEN 'Monday'
-                WHEN 3 THEN 'Tuesday'
-                WHEN 4 THEN 'Wednesday'
-                WHEN 5 THEN 'Thursday'
-                WHEN 6 THEN 'Friday'
-                WHEN 7 THEN 'Saturday'
-            END
-        """
-            )
+            "day_name": F.when(F.col(day_col) == 1, "Sunday")
+            .when(F.col(day_col) == 2, "Monday")
+            .when(F.col(day_col) == 3, "Tuesday")
+            .when(F.col(day_col) == 4, "Wednesday")
+            .when(F.col(day_col) == 5, "Thursday")
+            .when(F.col(day_col) == 6, "Friday")
+            .when(F.col(day_col) == 7, "Saturday")
+            .otherwise(None)
         }
     )
 
@@ -74,7 +67,7 @@ def round_metric_columns(df, precision=2):
         F.col("pickup_day_of_week").alias("day_of_week"),
         F.col("day_name"),
         F.col("total_rides"),
-        F.col("total_fare"),
+        F.round(F.col("total_fare"), precision).alias("total_fare"),
         F.round(F.col("avg_distance"), precision).alias("avg_distance"),
         F.round(F.col("avg_fare"), precision).alias("avg_fare"),
         F.round(F.col("avg_speed"), precision).alias("avg_speed"),
