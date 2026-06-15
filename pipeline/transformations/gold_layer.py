@@ -101,30 +101,32 @@ def sort_by_day_of_week(df, day_col="day_of_week"):
 # DLT VIEW DEFINITION
 # ========================================
 
-@dlt.view(
-    name="day_of_week_metrics",
-    comment="Daily aggregated metrics for the number of rides, "
-    "average distance, average fare, and average speed for each day of the week.",
-)
-def day_of_week_metrics():
-    """
-    Gold layer: Aggregated metrics by day of week
-    
-    Provides business-ready metrics grouped by day of week with readable day names.
-    
-    Transformations applied:
-    1. Aggregate trips by day of week
-    2. Convert day numbers to names
-    3. Round metrics to 2 decimal places
-    4. Sort by day of week
-    """
-    # Read from Silver layer
-    df = dlt.read("silver_nyc_taxi_trips")
-    
-    # Apply transformations using testable functions
-    df = aggregate_by_day_of_week(df)
-    df = convert_day_number_to_name(df)
-    df = round_metric_columns(df)
-    df = sort_by_day_of_week(df)
-    
-    return df
+# Only define DLT views when dlt module is available (Databricks Runtime)
+if dlt is not None:
+    @dlt.view(
+        name="day_of_week_metrics",
+        comment="Daily aggregated metrics for the number of rides, "
+        "average distance, average fare, and average speed for each day of the week.",
+    )
+    def day_of_week_metrics():
+        """
+        Gold layer: Aggregated metrics by day of week
+        
+        Provides business-ready metrics grouped by day of week with readable day names.
+        
+        Transformations applied:
+        1. Aggregate trips by day of week
+        2. Convert day numbers to names
+        3. Round metrics to 2 decimal places
+        4. Sort by day of week
+        """
+        # Read from Silver layer
+        df = dlt.read("silver_nyc_taxi_trips")
+        
+        # Apply transformations using testable functions
+        df = aggregate_by_day_of_week(df)
+        df = convert_day_number_to_name(df)
+        df = round_metric_columns(df)
+        df = sort_by_day_of_week(df)
+        
+        return df
