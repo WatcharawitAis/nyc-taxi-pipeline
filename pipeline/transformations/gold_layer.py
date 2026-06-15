@@ -1,4 +1,9 @@
-import dlt
+# Conditional import for dlt - only available in Databricks Runtime
+try:
+    import dlt
+except ImportError:
+    dlt = None  # For testing environments where dlt is not available
+
 from pyspark.sql import functions as F
 
 
