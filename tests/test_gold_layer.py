@@ -244,7 +244,8 @@ def test_round_metrics_preserves_non_rounded_columns(spark):
     assert row.day_of_week == 1
     assert row.day_name == "Sunday"
     assert row.total_rides == 100
-    assert row.total_fare == 1234.567
+    # total_fare IS rounded to 2 decimals
+    assert row.total_fare == 1234.57
 
 
 # ========================================
