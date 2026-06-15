@@ -18,6 +18,7 @@ def clean_and_validate_zip(col_name):
         pyspark.sql.Column: A column with cleaned and validated zip codes.
     """
     # แปลงเป็น string และ trim ช่องว่างก่อน
+
     zip_pattern = r"^[0-9]+(\.0+)?$"
     cleaned_col = F.trim(F.col(col_name).cast("string"))
 
@@ -57,6 +58,7 @@ def calculate_trip_duration(
 ):
     """Calculates trip duration in minutes."""
     # แก้ lint: ใช้ .withColumns() แทน .withColumn()
+
     return df.withColumns(
         {
             "trip_duration_minutes": (
@@ -77,6 +79,7 @@ def calculate_avg_speed(
     Negative durations will produce negative speeds, which helps identify data quality issues.
     """
     # แก้ lint: ใช้ .withColumns() แทน .withColumn()
+
     return df.withColumns(
         {
             "avg_speed_mph": F.when(
@@ -138,6 +141,7 @@ def apply_data_quality_filters(df):
 # ========================================
 
 # Only define DLT tables when dlt module is available (Databricks Runtime)
+
 if dlt is not None:
 
     @dlt.table(
@@ -155,12 +159,15 @@ if dlt is not None:
         - CAST: Zip codes to string (preserve leading zeros)
         """
         # Read from Bronze layer
+
         df = dlt.read("bronze_nyc_taxi_trips")
 
         # Apply transformations using testable functions
+
         df = validate_datetime_columns(df)
 
         # Clean zip codes
+
         df = df.withColumns(
             {
                 "pickup_zip": clean_and_validate_zip("pickup_zip"),
@@ -169,11 +176,13 @@ if dlt is not None:
         )
 
         # Calculate metrics
+
         df = calculate_trip_duration(df)
         df = calculate_avg_speed(df)
         df = extract_time_features(df)
 
         # Select and rename columns
+
         clean_df = df.select(
             F.col("valid_pickup_datetime").alias("tpep_pickup_datetime"),
             F.col("valid_dropoff_datetime").alias("tpep_dropoff_datetime"),
@@ -191,6 +200,7 @@ if dlt is not None:
         )
 
         # Apply filters
+
         clean_df = apply_data_quality_filters(clean_df)
 
         return clean_df

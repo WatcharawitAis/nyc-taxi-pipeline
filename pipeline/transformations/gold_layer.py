@@ -13,6 +13,7 @@ def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
     Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
     """
     # Use .withColumns() instead of .withColumn() for Spark Connect compatibility
+
     return df.withColumns(
         {
             "day_name": F.expr(
@@ -99,6 +100,7 @@ def sort_by_day_of_week(df, day_col="day_of_week"):
 # ========================================
 
 # Only define DLT views when dlt module is available (Databricks Runtime)
+
 if dlt is not None:
 
     @dlt.view(
@@ -119,9 +121,11 @@ if dlt is not None:
         4. Sort by day of week
         """
         # Read from Silver layer
+
         df = dlt.read("silver_nyc_taxi_trips")
 
         # Apply transformations using testable functions
+
         df = aggregate_by_day_of_week(df)
         df = convert_day_number_to_name(df)
         df = round_metric_columns(df)
