@@ -11,12 +11,22 @@ def silver_nyc_taxi_trips():
     Silver layer: Clean invalid data
 
     Data Quality Rules:
+    - VALIDATE: DateTime must be parseable timestamps
     - REMOVE: Negative fares, zero distance, zero fares (invalid data)
     - ADD: Derived metrics (trip duration, average speed, time of day)
     - CAST: Zip codes to string (preserve leading zeros)
     """
     # Read from Bronze layer
     df = spark.read.table("bronze_nyc_taxi_trips")  # noqa: F821
+
+    # ⭐ เพิ่มการ validate datetime columns ก่อน
+    df = df.withColumns(
+        {
+            # ลอง parse เป็น timestamp ถ้า parse ไม่ได้จะได้ NULL
+            "valid_pickup_datetime": F.to_timestamp("tpep_pickup_datetime"),
+            "valid_dropoff_datetime": F.to_timestamp("tpep_dropoff_datetime"),
+        }
+    )
 
     # Calculate derived metrics using withColumns for better performance
     df = df.withColumns(
