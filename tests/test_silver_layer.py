@@ -16,6 +16,7 @@ Test Coverage:
 """
 
 import pytest
+from datetime import datetime
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, DoubleType
 
@@ -292,9 +293,10 @@ def test_data_quality_filters_valid_records(spark):
         StructField("tpep_dropoff_datetime", TimestampType(), True),
     ])
     
+    # Fixed: Use datetime objects instead of Column expressions
     data = [
-        (10.0, 2.5, 15.0, F.to_timestamp(F.lit("2023-01-01 10:00:00")), F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
-        (25.0, 5.0, 30.0, F.to_timestamp(F.lit("2023-01-01 11:00:00")), F.to_timestamp(F.lit("2023-01-01 11:30:00"))),
+        (10.0, 2.5, 15.0, datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 15, 0)),
+        (25.0, 5.0, 30.0, datetime(2023, 1, 1, 11, 0, 0), datetime(2023, 1, 1, 11, 30, 0)),
     ]
     df = spark.createDataFrame(data, schema)
     
@@ -314,19 +316,20 @@ def test_data_quality_filters_remove_invalid(spark):
         StructField("tpep_dropoff_datetime", TimestampType(), True),
     ])
     
+    # Fixed: Use datetime objects instead of Column expressions
     data = [
         # Valid record
-        (10.0, 2.5, 15.0, F.to_timestamp(F.lit("2023-01-01 10:00:00")), F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
+        (10.0, 2.5, 15.0, datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 15, 0)),
         # Invalid: zero fare
-        (0.0, 2.5, 15.0, F.to_timestamp(F.lit("2023-01-01 10:00:00")), F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
+        (0.0, 2.5, 15.0, datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 15, 0)),
         # Invalid: zero distance
-        (10.0, 0.0, 15.0, F.to_timestamp(F.lit("2023-01-01 10:00:00")), F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
+        (10.0, 0.0, 15.0, datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 15, 0)),
         # Invalid: zero duration
-        (10.0, 2.5, 0.0, F.to_timestamp(F.lit("2023-01-01 10:00:00")), F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
+        (10.0, 2.5, 0.0, datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 15, 0)),
         # Invalid: NULL pickup
-        (10.0, 2.5, 15.0, None, F.to_timestamp(F.lit("2023-01-01 10:15:00"))),
+        (10.0, 2.5, 15.0, None, datetime(2023, 1, 1, 10, 15, 0)),
         # Invalid: dropoff before pickup
-        (10.0, 2.5, 15.0, F.to_timestamp(F.lit("2023-01-01 10:15:00")), F.to_timestamp(F.lit("2023-01-01 10:00:00"))),
+        (10.0, 2.5, 15.0, datetime(2023, 1, 1, 10, 15, 0), datetime(2023, 1, 1, 10, 0, 0)),
     ]
     df = spark.createDataFrame(data, schema)
     
