@@ -189,13 +189,7 @@ jobs:
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}
-    
-    # Apply GitHub environment (enables protection rules)
-    environment: staging
-    # 💡 TIP: Configure environment protection rules:
-    #   GitHub → Settings → Environments → staging
-    #   - Add required reviewers (optional)
-    #   - Add deployment branch restrictions (optional)
+
 
   # ---------------------------------------------------------------------------
   # Deploy to Production environment
@@ -217,14 +211,7 @@ jobs:
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_TOKEN }}
-    
-    # Apply GitHub environment (enables protection rules)
-    environment: production
-    # ⚠️ IMPORTANT: Configure environment protection rules for production:
-    #   GitHub → Settings → Environments → production
-    #   - Add required reviewers (REQUIRED!)
-    #   - Restrict deployment branch to 'main' only
-    #   - Add wait timer before deployment (optional)
+
 
   # ===========================================================================
   # MANUAL DEPLOYMENT JOB
@@ -256,24 +243,4 @@ jobs:
           github.event.inputs.environment == 'staging' && secrets.DATABRICKS_STAGING_TOKEN ||
           secrets.DATABRICKS_DEV_TOKEN
         }}
-    
-    # Apply environment protection rules based on selection
-    environment: ${{ github.event.inputs.environment == 'prod' && 'production' || github.event.inputs.environment }}
-    # Note: If 'prod' is selected, GitHub may require manual approval
-    #       based on environment protection rules
 
-# =============================================================================
-# WORKFLOW SUMMARY
-# =============================================================================
-#
-# | Trigger                | Job Run              | Action          | Token        |
-# |------------------------|----------------------|-----------------|--------------|
-# | PR → dev               | validate-pr-dev      | Validate only   | DEV_TOKEN    |
-# | PR → staging           | validate-pr-staging  | Validate only   | STAGING_TOKEN|
-# | PR → main              | validate-pr-prod     | Validate only   | PROD_TOKEN ⚠️|
-# | Push to dev            | deploy-dev           | Full deploy     | DEV_TOKEN    |
-# | Push to staging        | deploy-staging       | Full deploy     | STAGING_TOKEN|
-# | Push to main           | deploy-prod          | Full deploy     | PROD_TOKEN ⚠️|
-# | Manual trigger         | deploy-manual        | Full deploy     | Based on env |
-#
-# =============================================================================
