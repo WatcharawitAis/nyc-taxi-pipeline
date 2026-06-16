@@ -1,0 +1,17 @@
+# Development Dependencies for NYC Taxi Pipeline
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-spark>=0.6.0
+
+# PySpark (match Databricks Runtime version)
+pyspark==3.5.0
+
+# Code Quality
+flake8>=6.0.0
+black==24.4.2
+mypy>=1.0.0
+
+# Type Stubs
+types-requests
