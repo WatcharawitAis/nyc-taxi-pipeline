@@ -10,7 +10,7 @@ pyspark==3.5.0
 
 # Code Quality
 flake8>=6.0.0
-black>=23.0.0
+black==24.4.2
 mypy>=1.0.0
 
 # Type Stubs
