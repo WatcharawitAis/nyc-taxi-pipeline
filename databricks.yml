@@ -24,6 +24,13 @@ targets:
       schema: dev
       pipeline_development: true
     
+  staging:
+    mode: development
+    variables:
+      catalog: biap
+      schema: staging
+      pipeline_development: false
+  
   prod:
     mode: production
     variables:
