@@ -1,246 +1,60 @@
 name: CI/CD Pipeline
-
 # =============================================================================
 # NYC TAXI PIPELINE - CI/CD WORKFLOW
-# =============================================================================
-# Purpose: Automate testing, validation, and deployment to Databricks
-# 
-# This workflow calls a reusable workflow from data-platform-devops repository
-# to standardize CI/CD practices across multiple projects.
-#
-# Required Secrets (GitHub Settings → Secrets and variables → Actions):
-#   - DATABRICKS_HOST: Your Databricks workspace URL
-#     Example: https://adb-1234567890.1.azuredatabricks.net
-#   - DATABRICKS_DEV_TOKEN: Access token for dev environment
-#   - DATABRICKS_STAGING_TOKEN: Access token for staging environment
-#   - DATABRICKS_PROD_TOKEN: Access token for production environment
-#
-# Branch to Environment Mapping:
-#   - dev branch → Development environment
-#   - staging branch → Staging environment
-#   - main branch → Production environment
+# Calls reusable workflow from data-platform-devops repository
 # =============================================================================
 
 on:
-  # Trigger when PR is opened/updated targeting these branches
+  # Trigger on PR to main branches
   pull_request:
     branches: [main, dev, staging]
   
-  # Trigger when code is pushed to these branches
+  # Trigger on push to main branches
   push:
     branches: [main, dev, staging]
   
-  # Allow manual trigger with environment selection
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - dev
-          - staging
-          - prod
+  # # Allow manual trigger
+  # workflow_dispatch:
 
 jobs:
-  # ===========================================================================
-  # PR VALIDATION JOBS
-  # ===========================================================================
-  # Purpose: Validate pull requests BEFORE merging
-  # What it does:
-  #   ✅ Run pytest tests
-  #   ✅ Run code linting (flake8, black)
-  #   ✅ Validate Databricks bundle configuration
-  #   ❌ Does NOT deploy to Databricks (validation_only: true)
-  #
-  # Security: Each job uses the token for its TARGET environment
-  # Why? To ensure the code will work in that environment's permissions/resources
-  # ===========================================================================
-
-  # ---------------------------------------------------------------------------
-  # Validates PR targeting 'dev' branch
-  # ---------------------------------------------------------------------------
-  validate-pr-dev:
-    name: 🔍 Validate PR → dev
-    # Only run when:
-    #   - Event is a pull request
-    #   - AND target branch (base_ref) is 'dev'
-    if: |
-      github.event_name == 'pull_request' &&
-      github.base_ref == 'dev'
-    
-    # Call reusable workflow from data-platform-devops repo
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
-    with:
-      environment: dev
-      validation_only: true      # Only validate, do NOT deploy
-      run_ci_tests: true         # Run pytest tests
-      run_linting: true          # Run flake8 + black
-      # Note: Using default parameter values:
-      #   requirements_file: 'requirements-dev.txt'
-      #   test_path: 'tests/'
-      #   lint_path: 'pipeline/transformations/'
-      #   coverage_source: 'pipeline'
-    
-    secrets:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}  # Use DEV token
-
-  # ---------------------------------------------------------------------------
-  # Validates PR targeting 'staging' branch
-  # ---------------------------------------------------------------------------
-  validate-pr-staging:
-    name: 🔍 Validate PR → staging
-    if: |
-      github.event_name == 'pull_request' &&
-      github.base_ref == 'staging'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
-    with:
-      environment: staging
-      validation_only: true
-      run_ci_tests: true
-      run_linting: true
-    
-    secrets:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}  # Use STAGING token
-
-  # ---------------------------------------------------------------------------
-  # Validates PR targeting 'main' branch (production)
-  # ---------------------------------------------------------------------------
-  validate-pr-prod:
-    name: 🔍 Validate PR → main (production)
-    # ⚠️ CRITICAL SECURITY NOTE:
-    # This uses PROD_TOKEN to validate against production environment
-    # Why? To catch permission/resource issues BEFORE merging to main
-    # If we used DEV_TOKEN here, validation might pass but deployment would fail
-    if: |
-      github.event_name == 'pull_request' &&
-      github.base_ref == 'main'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
-    with:
-      environment: prod
-      validation_only: true
-      run_ci_tests: true
-      run_linting: true
-    
-    secrets:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_TOKEN }}  # Use PROD token ⚠️
-
-  # ===========================================================================
-  # DEPLOYMENT JOBS
-  # ===========================================================================
-  # Purpose: Deploy code to Databricks after passing all checks
-  # Triggers: When code is pushed to a branch (after PR merge or direct push)
-  # What it does:
-  #   ✅ Run pytest tests
-  #   ✅ Run code linting
-  #   ✅ Validate Databricks bundle
-  #   ✅ Deploy to Databricks (validation_only: false)
-  # ===========================================================================
-
-  # ---------------------------------------------------------------------------
-  # Deploy to Development environment
-  # ---------------------------------------------------------------------------
+  # =============================================================================
+  # Development Environment
+  # =============================================================================
   deploy-dev:
-    name: 🚀 Deploy to Development
-    # Only run when:
-    #   - Event is a push
-    #   - AND branch is 'dev'
-    if: |
-      github.event_name == 'push' && 
-      github.ref == 'refs/heads/dev'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
+    name: CI/CD for Development
+    if: github.ref == 'refs/heads/dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev')
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@main
     with:
-      environment: dev
-      validation_only: false     # Deploy to Databricks (not just validate)
-      run_ci_tests: true
-      run_linting: true
-    
+      target_env: dev
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
+      DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
 
-  # ---------------------------------------------------------------------------
-  # Deploy to Staging environment
-  # ---------------------------------------------------------------------------
+  # =============================================================================
+  # Staging Environment
+  # =============================================================================
   deploy-staging:
-    name: 🚀 Deploy to Staging
-    if: |
-      github.event_name == 'push' && 
-      github.ref == 'refs/heads/staging'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
+    name: CI/CD for Staging
+    if: github.ref == 'refs/heads/staging' || (github.event_name == 'pull_request' && github.base_ref == 'staging')
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@main
     with:
-      environment: staging
-      validation_only: false
-      run_ci_tests: true
-      run_linting: true
-    
+      target_env: staging
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}
+      DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
 
-
-  # ---------------------------------------------------------------------------
-  # Deploy to Production environment
-  # ---------------------------------------------------------------------------
+  # =============================================================================
+  # Production Environment
+  # =============================================================================
   deploy-prod:
-    name: 🚀 Deploy to Production
-    if: |
-      github.event_name == 'push' && 
-      github.ref == 'refs/heads/main'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
+    name: CI/CD for Production
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@main
     with:
-      environment: prod
-      validation_only: false
-      run_ci_tests: true
-      run_linting: true
-    
+      target_env: prod
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_TOKEN }}
-
-
-  # ===========================================================================
-  # MANUAL DEPLOYMENT JOB
-  # ===========================================================================
-  # Purpose: Allow on-demand deployment via GitHub Actions UI
-  # Use case: Hotfixes, rollbacks, or testing deployments
-  # How to use: GitHub → Actions → CI/CD Pipeline → Run workflow
-  # ===========================================================================
-  
-  deploy-manual:
-    name: 🎯 Manual Deployment to ${{ github.event.inputs.environment }}
-    # Only run when workflow is manually triggered
-    if: github.event_name == 'workflow_dispatch'
-    
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/reusable-deploy.yml@main
-    
-    with:
-      environment: ${{ github.event.inputs.environment }}
-      validation_only: false
-      run_ci_tests: true
-      run_linting: true
-    
-    secrets:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      # Dynamically select token based on chosen environment
-      DATABRICKS_TOKEN: |
-        ${{ 
-          github.event.inputs.environment == 'prod' && secrets.DATABRICKS_PROD_TOKEN ||
-          github.event.inputs.environment == 'staging' && secrets.DATABRICKS_STAGING_TOKEN ||
-          secrets.DATABRICKS_DEV_TOKEN
-        }}
-
+      DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
