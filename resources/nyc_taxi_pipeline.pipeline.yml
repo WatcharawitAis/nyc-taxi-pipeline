@@ -30,14 +30,6 @@ resources:
       continuous: false
       development: ${var.pipeline_development}
       
-      # Notifications (optional)
-      notifications:
-        - alerts:
-            - on_update_failure
-            - on_update_fatal_failure
-          email_recipients:
-            - watchaaq@ais.co.th
-      
       # Permissions
       permissions:
         - level: CAN_VIEW
