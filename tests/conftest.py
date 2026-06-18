@@ -17,7 +17,7 @@ def local_spark():
     """Local Spark session for unit tests — runs on CI runner"""
     spark = (
         SparkSession.builder
-        .master("local[1]")
+        .remote("local")
         .appName("unit-tests")
         .config("spark.sql.shuffle.partitions", "1")
         .getOrCreate()
@@ -29,7 +29,11 @@ def local_spark():
 @pytest.fixture(scope="session")
 def databricks_spark():
     """Databricks Spark session for integration tests — connects to cluster"""
-    spark = DatabricksSession.builder.getOrCreate()
+    spark = (
+        DatabricksSession.builder
+        .serverless(True)
+        .getOrCreate()
+        )
     yield spark
     # ไม่ต้อง stop() เพราะ databricks-connect จัดการเอง
 
