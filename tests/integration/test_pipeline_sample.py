@@ -169,6 +169,7 @@ class TestSilverToGoldIntegration:
         """Test complete gold aggregation with real Delta tables"""
         
         # 1. SETUP: Write test data to silver table
+        # In TestSilverToGoldIntegration class, around line 170-179
         schema = StructType([
             StructField("tpep_pickup_datetime", TimestampType(), True),
             StructField("tpep_dropoff_datetime", TimestampType(), True),
@@ -178,8 +179,8 @@ class TestSilverToGoldIntegration:
             StructField("fare_amount", DoubleType(), True),
             StructField("trip_duration_minutes", DoubleType(), True),
             StructField("avg_speed_mph", DoubleType(), True),
-            StructField("pickup_hour", DoubleType(), True),
-            StructField("pickup_day_of_week", DoubleType(), True),
+            StructField("pickup_hour", IntegerType(), True),      # Changed from DoubleType
+            StructField("pickup_day_of_week", IntegerType(), True),  # Changed from DoubleType
         ])
         
         silver_data = [
