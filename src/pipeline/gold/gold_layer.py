@@ -101,10 +101,13 @@ if dlt is not None:
         name="day_of_week_metrics",
         comment="Daily aggregated metrics for the number of rides, "
         "average distance, average fare, and average speed for each day of the week.",
+        schema="gold",  # Output to gold schema (not the default target schema)
     )
     def day_of_week_metrics():
         """
-        Gold layer: Aggregated metrics by day of week
+        Gold Layer: Aggregated metrics by day of week
+        
+        Output: {catalog}.gold.day_of_week_metrics
 
         Provides business-ready metrics grouped by day of week with readable day names.
 
@@ -114,8 +117,7 @@ if dlt is not None:
         3. Round metrics to 2 decimal places
         4. Sort by day of week
         """
-        # Read from Silver layer
-
+        # Read from Silver layer (silver schema)
         df = dlt.read("silver_nyc_taxi_trips")
 
         # Apply transformations using testable functions

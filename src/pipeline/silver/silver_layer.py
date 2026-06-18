@@ -19,14 +19,14 @@ def clean_and_validate_zip(col_name):
     """
     # แปลงเป็น string และ trim ช่องว่างก่อน
 
-    zip_pattern = r"^[0-9]+(\.0+)?$"
+    zip_pattern = r"^[0-9]+(\\.0+)?$"
     cleaned_col = F.trim(F.col(col_name).cast("string"))
 
     return F.when(
         cleaned_col.rlike(zip_pattern),
         # ถ้าผ่านเงื่อนไข ให้ใช้ regex_replace ตัดจุดทศนิยมและเลข 0 ข้างหลังออก (เช่น "20023.0" -> "20023")
         # โครงสร้างนี้จะไม่ทำลายเลข 0 ตัวหน้า เช่น "01234.0" -> "01234"
-        F.regexp_replace(cleaned_col, r"\.0+$", ""),
+        F.regexp_replace(cleaned_col, r"\\.0+$", ""),
     ).otherwise(None)
 
 
@@ -147,10 +147,13 @@ if dlt is not None:
     @dlt.table(
         name="silver_nyc_taxi_trips",
         comment="Cleaned NYC taxi trip data with quality flags and derived metrics",
+        schema="silver",  # Output to silver schema (not the default target schema)
     )
     def silver_nyc_taxi_trips():
         """
-        Silver layer: Clean invalid data
+        Silver Layer: Cleaned and enriched NYC taxi trip data
+        
+        Output: {catalog}.silver.silver_nyc_taxi_trips
 
         Data Quality Rules:
         - VALIDATE: DateTime must be parseable timestamps
@@ -158,8 +161,7 @@ if dlt is not None:
         - ADD: Derived metrics (trip duration, average speed, time of day)
         - CAST: Zip codes to string (preserve leading zeros)
         """
-        # Read from Bronze layer
-
+        # Read from Bronze layer (bronze schema)
         df = dlt.read("bronze_nyc_taxi_trips")
 
         # Apply transformations using testable functions
