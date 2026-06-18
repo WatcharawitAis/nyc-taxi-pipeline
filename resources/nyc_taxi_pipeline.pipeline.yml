@@ -29,10 +29,3 @@ resources:
       # Pipeline mode
       continuous: false
       development: ${var.pipeline_development}
-      
-      # Permissions
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
-        - level: CAN_RUN
-          group_name: data_engineers
