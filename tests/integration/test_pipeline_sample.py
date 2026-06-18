@@ -14,7 +14,7 @@ Run with: pytest tests/integration/test_pipeline.py -v --tb=short
 import pytest
 from pyspark.sql import functions as F
 from datetime import datetime
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, TimestampType
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType, TimestampType, IntegerType
 
 
 # Test configuration
