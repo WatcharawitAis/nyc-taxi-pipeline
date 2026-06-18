@@ -12,18 +12,18 @@ from pyspark.sql.types import (
 )
 
 
-@pytest.fixture(scope="session")
-def local_spark():
-    """Local Spark session for unit tests — runs on CI runner"""
-    spark = (
-        SparkSession.builder
-        .remote("local")
-        .appName("unit-tests")
-        .config("spark.sql.shuffle.partitions", "1")
-        .getOrCreate()
-    )
-    yield spark
-    spark.stop()
+# @pytest.fixture(scope="session")
+# def local_spark():
+#     """Local Spark session for unit tests — runs on CI runner"""
+#     spark = (
+#         SparkSession.builder
+#         .remote("local")
+#         .appName("unit-tests")
+#         .config("spark.sql.shuffle.partitions", "1")
+#         .getOrCreate()
+#     )
+#     yield spark
+#     spark.stop()
 
 
 @pytest.fixture(scope="session")
