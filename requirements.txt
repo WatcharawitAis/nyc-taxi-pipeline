@@ -7,7 +7,7 @@ pytest-cov>=4.1.0
 pytest-spark>=0.6.0
 
 # PySpark (match Databricks Runtime version)
-pyspark==3.5.0
+# pyspark==3.5.0
 
 # Code Quality
 flake8>=6.0.0
