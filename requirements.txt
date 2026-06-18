@@ -1,6 +1,6 @@
 # Development Dependencies for NYC Taxi Pipeline
 
-databricks-connect>=13.0.0
+databricks-connect==18.2.*
 # Testing
 pytest>=7.4.0
 pytest-cov>=4.1.0
