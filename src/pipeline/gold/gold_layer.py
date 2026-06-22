@@ -98,10 +98,9 @@ def sort_by_day_of_week(df, day_col="day_of_week"):
 if dlt is not None:
 
     @dlt.table(
-        name="day_of_week_metrics",
+        name="gold.day_of_week_metrics",
         comment="Daily aggregated metrics for the number of rides, "
         "average distance, average fare, and average speed for each day of the week.",
-        schema="gold",  # Output to gold schema (not the default target schema)
     )
     def day_of_week_metrics():
         """

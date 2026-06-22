@@ -145,9 +145,8 @@ def apply_data_quality_filters(df):
 if dlt is not None:
 
     @dlt.table(
-        name="silver_nyc_taxi_trips",
+        name="silver.silver_nyc_taxi_trips",
         comment="Cleaned NYC taxi trip data with quality flags and derived metrics",
-        schema="silver",  # Output to silver schema (not the default target schema)
     )
     def silver_nyc_taxi_trips():
         """
