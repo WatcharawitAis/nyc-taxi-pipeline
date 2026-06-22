@@ -6,6 +6,7 @@ sys.dont_write_bytecode = True # Prevents Python from creating the __pycache__ f
 sys.exit(
     pytest.main([
         "tests/",
-        "-v"
+        "-v",
+        "-p", "no:cacheprovider"
     ])
 )
