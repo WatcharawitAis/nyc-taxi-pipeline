@@ -1,91 +1,15 @@
-from pyspark.sql import functions as F
-
-
 try:
     import dlt
 except ImportError:
     dlt = None  # For testing environments where dlt is not available
 
-
-def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
-    """Converts numeric day of week (1-7) to day name.
-
-    Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
-    """
-    return df.withColumns(
-        {
-            "day_name": F.when(F.col(day_col) == 1, "Sunday")
-            .when(F.col(day_col) == 2, "Monday")
-            .when(F.col(day_col) == 3, "Tuesday")
-            .when(F.col(day_col) == 4, "Wednesday")
-            .when(F.col(day_col) == 5, "Thursday")
-            .when(F.col(day_col) == 6, "Friday")
-            .when(F.col(day_col) == 7, "Saturday")
-            .otherwise(None)
-        }
-    )
-
-
-def aggregate_by_day_of_week(df, group_col="pickup_day_of_week"):
-    """Aggregates trip metrics by day of week.
-
-    Calculates:
-    - total_rides: Count of trips
-    - total_fare: Sum of all fares
-    - avg_distance: Average trip distance
-    - avg_fare: Average fare amount
-    - avg_speed: Average speed
-
-    Args:
-        df: Input DataFrame from silver layer
-        group_col: Column to group by
-
-    Returns:
-        Aggregated DataFrame
-    """
-    return df.groupBy(group_col).agg(
-        F.count(F.lit(1)).alias("total_rides"),
-        F.sum("fare_amount").alias("total_fare"),
-        F.avg("trip_distance").alias("avg_distance"),
-        F.avg("fare_amount").alias("avg_fare"),
-        F.avg("avg_speed_mph").alias("avg_speed"),
-    )
-
-
-def round_metric_columns(df, precision=2):
-    """
-    Rounds numeric metric columns to specified precision.
-
-    Args:
-        df: Input DataFrame
-        precision: Number of decimal places
-
-    Returns:
-        DataFrame with rounded metrics
-    """
-    return df.select(
-        F.col("pickup_day_of_week").alias("day_of_week"),
-        F.col("day_name"),
-        F.col("total_rides"),
-        F.round(F.col("total_fare"), precision).alias("total_fare"),
-        F.round(F.col("avg_distance"), precision).alias("avg_distance"),
-        F.round(F.col("avg_fare"), precision).alias("avg_fare"),
-        F.round(F.col("avg_speed"), precision).alias("avg_speed"),
-    )
-
-
-def sort_by_day_of_week(df, day_col="day_of_week"):
-    """
-    Sorts DataFrame by day of week (1=Sunday to 7=Saturday).
-
-    Args:
-        df: Input DataFrame
-        day_col: Column name to sort by
-
-    Returns:
-        Sorted DataFrame
-    """
-    return df.orderBy(day_col)
+# Import utility functions
+from utils.aggregations import (
+    aggregate_by_day_of_week,
+    round_metric_columns,
+    sort_by_day_of_week,
+)
+from utils.transformations import convert_day_number_to_name
 
 
 # ========================================
@@ -117,7 +41,7 @@ if dlt is not None:
         4. Sort by day of week
         """
         # Read from Silver layer (silver schema)
-        df = dlt.read("silver.silver_nyc_taxi_trips")
+        df = dlt.readStream("silver.silver_nyc_taxi_trips")
 
         # Apply transformations using testable functions
 

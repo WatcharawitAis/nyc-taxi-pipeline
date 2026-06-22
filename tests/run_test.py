@@ -23,7 +23,6 @@ if __name__ == "__main__":
         f"--rootdir={project_root}",
         f"-c={ini_file_path}"
     ])
-
     
     if exit_code != 0:
         raise RuntimeError(f"Pytest failed with exit code {exit_code}")
