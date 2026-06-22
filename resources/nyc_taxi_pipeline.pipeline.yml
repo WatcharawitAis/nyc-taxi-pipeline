@@ -37,7 +37,7 @@ resources:
         - environment_key: integration_test_env
           spec:
             dependencies:
-              - "pytest
+              - "pytest"
       tasks:
         - task_key: run_tests
           environment_key: integration_test_env
