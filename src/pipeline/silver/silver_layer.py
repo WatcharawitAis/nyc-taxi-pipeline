@@ -161,7 +161,7 @@ if dlt is not None:
         - CAST: Zip codes to string (preserve leading zeros)
         """
         # Read from Bronze layer (bronze schema)
-        df = dlt.read("bronze_nyc_taxi_trips")
+        df = dlt.read("bronze.bronze_nyc_taxi_trips")
 
         # Apply transformations using testable functions
 

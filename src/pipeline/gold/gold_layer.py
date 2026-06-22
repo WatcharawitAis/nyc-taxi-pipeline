@@ -117,7 +117,7 @@ if dlt is not None:
         4. Sort by day of week
         """
         # Read from Silver layer (silver schema)
-        df = dlt.read("silver_nyc_taxi_trips")
+        df = dlt.read("silver.silver_nyc_taxi_trips")
 
         # Apply transformations using testable functions
 
