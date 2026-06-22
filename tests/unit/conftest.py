@@ -11,9 +11,8 @@ from pyspark.sql.types import (
     IntegerType,
 )
 
-
 # @pytest.fixture(scope="session")
-# def local_spark():
+# def databricks_spark():
 #     """Local Spark session for unit tests — runs on CI runner"""
 #     spark = (
 #         SparkSession.builder
@@ -24,6 +23,7 @@ from pyspark.sql.types import (
 #     )
 #     yield spark
 #     spark.stop()
+
 
 
 @pytest.fixture(scope="session")

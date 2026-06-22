@@ -29,3 +29,17 @@ resources:
       # Pipeline mode
       continuous: false
       development: ${var.pipeline_development}
+ 
+  jobs:
+    integration_test:
+      name: integration-test
+      environments:
+        - environment_key: integration_test_env
+          spec:
+            dependencies:
+              - "pytest"
+      tasks:
+        - task_key: run_tests
+          environment_key: integration_test_env
+          spark_python_task:
+            python_file: ../tests/integration/run_integration.py
