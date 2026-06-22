@@ -38,4 +38,4 @@ resources:
         - task_key: run_tests
 
           spark_python_task:
-            python_file: ../tests/run_integration.py
+            python_file: ../tests/integration/run_integration.py
