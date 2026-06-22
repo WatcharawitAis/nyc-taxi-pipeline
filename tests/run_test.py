@@ -1,4 +1,3 @@
-# tests/run_pytest.py
 
 import pytest
 import sys
@@ -6,7 +5,7 @@ sys.dont_write_bytecode = True # Prevents Python from creating the __pycache__ f
 
 sys.exit(
     pytest.main([
-        "tests/integration",
+        "tests/",
         "-v"
     ])
 )

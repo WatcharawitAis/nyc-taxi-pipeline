@@ -26,28 +26,28 @@ GOLD_TABLE = f"{TEST_CATALOG}.{TEST_SCHEMA}.gold_taxi_daily"
 
 
 @pytest.fixture(scope="module")
-def setup_test_tables(databricks_spark):
+def setup_test_tables(spark):
     """Create test schema and cleanup before/after tests"""
     
     # Setup: Create schema
-    databricks_spark.sql(f"CREATE CATALOG IF NOT EXISTS {TEST_CATALOG}")
-    databricks_spark.sql(f"CREATE SCHEMA IF NOT EXISTS {TEST_CATALOG}.{TEST_SCHEMA}")
+    spark.sql(f"CREATE CATALOG IF NOT EXISTS {TEST_CATALOG}")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {TEST_CATALOG}.{TEST_SCHEMA}")
     
     # Cleanup existing tables
-    databricks_spark.sql(f"DROP TABLE IF EXISTS {BRONZE_TABLE}")
-    databricks_spark.sql(f"DROP TABLE IF EXISTS {SILVER_TABLE}")
-    databricks_spark.sql(f"DROP TABLE IF EXISTS {GOLD_TABLE}")
+    spark.sql(f"DROP TABLE IF EXISTS {BRONZE_TABLE}")
+    spark.sql(f"DROP TABLE IF EXISTS {SILVER_TABLE}")
+    spark.sql(f"DROP TABLE IF EXISTS {GOLD_TABLE}")
     
     yield
     
     # Teardown: Cleanup after all tests (optional, comment if want to inspect)
-    # databricks_spark.sql(f"DROP SCHEMA IF EXISTS {TEST_CATALOG}.{TEST_SCHEMA} CASCADE")
+    # spark.sql(f"DROP SCHEMA IF EXISTS {TEST_CATALOG}.{TEST_SCHEMA} CASCADE")
 
 
 class TestBronzeToSilverIntegration:
     """Test bronze to silver layer with real tables"""
 
-    def test_full_silver_transformation_with_real_tables(self, databricks_spark, setup_test_tables):
+    def test_full_silver_transformation_with_real_tables(self, spark, setup_test_tables):
         """Test complete silver transformation with real Delta tables"""
         
         # 1. SETUP: Write test data to bronze table
@@ -70,7 +70,7 @@ class TestBronzeToSilverIntegration:
             (datetime(2023, 1, 5, 14, 0), datetime(2023, 1, 5, 13, 0), "10001.0", "10002.0", 5.0, 15.0),    # Dropoff before pickup
         ]
         
-        bronze_df = databricks_spark.createDataFrame(bronze_data, schema)
+        bronze_df = spark.createDataFrame(bronze_data, schema)
         bronze_df.write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # 2. RUN TRANSFORMATION: Apply silver layer logic
@@ -81,7 +81,7 @@ class TestBronzeToSilverIntegration:
         )
         
         # Read from bronze table (real table!)
-        df = databricks_spark.table(BRONZE_TABLE)
+        df = spark.table(BRONZE_TABLE)
         
         # Apply transformations
         df = validate_datetime_columns(df)
@@ -106,7 +106,7 @@ class TestBronzeToSilverIntegration:
         df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
         
         # 3. VERIFY: Read back from silver table and assert
-        silver_result = databricks_spark.table(SILVER_TABLE)
+        silver_result = spark.table(SILVER_TABLE)
         
         assert silver_result.count() == 2, "Silver should have 2 valid records (3 filtered out)"
         
@@ -127,7 +127,7 @@ class TestBronzeToSilverIntegration:
             assert row.trip_duration_minutes > 0, "All durations should be positive"
             assert "." not in row.pickup_zip, "Zip codes should not have decimals"
 
-    def test_zip_code_cleaning_in_real_table(self, databricks_spark, setup_test_tables):
+    def test_zip_code_cleaning_in_real_table(self, spark, setup_test_tables):
         """Test zip code cleaning writes correctly to Delta table"""
         
         # Write data with decimal zip codes
@@ -143,13 +143,13 @@ class TestBronzeToSilverIntegration:
         data = [(datetime(2023, 1, 1, 10, 0), datetime(2023, 1, 1, 10, 30), 
                  "10001.0", "10002.0", 5.0, 15.0)]
         
-        df = databricks_spark.createDataFrame(data, schema)
+        df = spark.createDataFrame(data, schema)
         df.write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # Transform and write to silver
         from src.pipeline.silver.silver_layer import clean_and_validate_zip
         
-        df = databricks_spark.table(BRONZE_TABLE)
+        df = spark.table(BRONZE_TABLE)
         df = df.withColumns({
             "pickup_zip": clean_and_validate_zip("pickup_zip"),
             "dropoff_zip": clean_and_validate_zip("dropoff_zip"),
@@ -157,7 +157,7 @@ class TestBronzeToSilverIntegration:
         df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
         
         # Verify persisted data
-        result = databricks_spark.table(SILVER_TABLE).collect()[0]
+        result = spark.table(SILVER_TABLE).collect()[0]
         assert result.pickup_zip == "10001"
         assert result.dropoff_zip == "10002"
 
@@ -165,7 +165,7 @@ class TestBronzeToSilverIntegration:
 class TestSilverToGoldIntegration:
     """Test silver to gold layer with real tables"""
 
-    def test_full_gold_aggregation_with_real_tables(self, databricks_spark, setup_test_tables):
+    def test_full_gold_aggregation_with_real_tables(self, spark, setup_test_tables):
         """Test complete gold aggregation with real Delta tables"""
         
         # 1. SETUP: Write test data to silver table
@@ -193,7 +193,7 @@ class TestSilverToGoldIntegration:
             (datetime(2023, 1, 3, 12, 0), datetime(2023, 1, 3, 12, 30), "10001", "10002", 6.5, 18.5, 30.0, 13.0, 12, 3),
         ]
         
-        silver_df = databricks_spark.createDataFrame(silver_data, schema)
+        silver_df = spark.createDataFrame(silver_data, schema)
         silver_df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
         
         # 2. RUN TRANSFORMATION: Apply gold layer logic
@@ -203,7 +203,7 @@ class TestSilverToGoldIntegration:
         )
         
         # Read from silver table (real table!)
-        df = databricks_spark.table(SILVER_TABLE)
+        df = spark.table(SILVER_TABLE)
         
         # Apply aggregations
         df = aggregate_by_day_of_week(df)
@@ -215,7 +215,7 @@ class TestSilverToGoldIntegration:
         df.write.mode("overwrite").saveAsTable(GOLD_TABLE)
         
         # 3. VERIFY: Read back from gold table and assert
-        gold_result = databricks_spark.table(GOLD_TABLE)
+        gold_result = spark.table(GOLD_TABLE)
         
         assert gold_result.count() == 3, "Gold should have 3 days of week"
         
@@ -240,7 +240,7 @@ class TestSilverToGoldIntegration:
 class TestEndToEndPipeline:
     """Test complete pipeline from bronze to gold with real tables"""
 
-    def test_full_pipeline_bronze_to_gold(self, databricks_spark, setup_test_tables):
+    def test_full_pipeline_bronze_to_gold(self, spark, setup_test_tables):
         """Test entire pipeline: bronze → silver → gold using real Delta tables"""
         
         # 1. BRONZE: Write raw data
@@ -259,7 +259,7 @@ class TestEndToEndPipeline:
             (datetime(2023, 1, 2, 12, 0), datetime(2023, 1, 2, 12, 30), "10005.0", "10006.0", 3.0, 12.0),
         ]
         
-        databricks_spark.createDataFrame(bronze_data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
+        spark.createDataFrame(bronze_data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # 2. SILVER: Transform bronze → silver
         from src.pipeline.silver.silver_layer import (
@@ -268,7 +268,7 @@ class TestEndToEndPipeline:
             extract_time_features, apply_data_quality_filters
         )
         
-        df = databricks_spark.table(BRONZE_TABLE)
+        df = spark.table(BRONZE_TABLE)
         df = validate_datetime_columns(df)
         df = df.withColumns({
             "pickup_zip": clean_and_validate_zip("pickup_zip"),
@@ -292,7 +292,7 @@ class TestEndToEndPipeline:
             round_metric_columns, sort_by_day_of_week
         )
         
-        df = databricks_spark.table(SILVER_TABLE)
+        df = spark.table(SILVER_TABLE)
         df = aggregate_by_day_of_week(df)
         df = convert_day_number_to_name(df)
         df = round_metric_columns(df)
@@ -300,23 +300,23 @@ class TestEndToEndPipeline:
         df.write.mode("overwrite").saveAsTable(GOLD_TABLE)
         
         # 4. VERIFY: End-to-end data flow
-        bronze_count = databricks_spark.table(BRONZE_TABLE).count()
-        silver_count = databricks_spark.table(SILVER_TABLE).count()
-        gold_count = databricks_spark.table(GOLD_TABLE).count()
+        bronze_count = spark.table(BRONZE_TABLE).count()
+        silver_count = spark.table(SILVER_TABLE).count()
+        gold_count = spark.table(GOLD_TABLE).count()
         
         assert bronze_count == 3, "Bronze should have 3 raw records"
         assert silver_count == 3, "Silver should have 3 cleaned records"
         assert gold_count >= 1, "Gold should have at least 1 aggregated day"
         
         # Verify gold metrics
-        gold_row = databricks_spark.table(GOLD_TABLE).collect()[0]
+        gold_row = spark.table(GOLD_TABLE).collect()[0]
         assert gold_row.total_rides > 0
         assert gold_row.total_fare > 0
         assert gold_row.day_name is not None
         
         print(f"✅ Pipeline test passed: {bronze_count} bronze → {silver_count} silver → {gold_count} gold")
 
-    def test_data_quality_enforcement_across_layers(self, databricks_spark, setup_test_tables):
+    def test_data_quality_enforcement_across_layers(self, spark, setup_test_tables):
         """Test data quality rules enforced when writing to real tables"""
         
         # Write data with quality issues to bronze
@@ -335,14 +335,14 @@ class TestEndToEndPipeline:
             (datetime(2023, 1, 1, 12, 0), datetime(2023, 1, 1, 12, 30), "10001", "10002", 0.0, 15.0),  # Zero distance
         ]
         
-        databricks_spark.createDataFrame(data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
+        spark.createDataFrame(data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # Transform with quality filters
         from src.pipeline.silver.silver_layer import (
             validate_datetime_columns, calculate_trip_duration, apply_data_quality_filters
         )
         
-        df = databricks_spark.table(BRONZE_TABLE)
+        df = spark.table(BRONZE_TABLE)
         df = validate_datetime_columns(df)
         df = calculate_trip_duration(df)
         df = df.select(
@@ -354,9 +354,9 @@ class TestEndToEndPipeline:
         df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
         
         # Verify only valid record persisted
-        silver_count = databricks_spark.table(SILVER_TABLE).count()
+        silver_count = spark.table(SILVER_TABLE).count()
         assert silver_count == 1, "Only 1 valid record should be written to silver"
         
-        valid_row = databricks_spark.table(SILVER_TABLE).collect()[0]
+        valid_row = spark.table(SILVER_TABLE).collect()[0]
         assert valid_row.fare_amount == 15.0
         assert valid_row.trip_distance == 5.0
