@@ -27,10 +27,10 @@ from src.pipeline.gold.gold_layer import (
 class TestConvertDayNumberToName:
     """Test day number to name conversion"""
 
-    def test_all_days_conversion(self, databricks_spark):
+    def test_all_days_conversion(self, local_spark):
         """All day numbers should convert correctly"""
         data = [(1,), (2,), (3,), (4,), (5,), (6,), (7,)]
-        df = databricks_spark.createDataFrame(data, ["pickup_day_of_week"])
+        df = local_spark.createDataFrame(data, ["pickup_day_of_week"])
         
         result = convert_day_number_to_name(df)
         day_names = [row.day_name for row in result.orderBy("pickup_day_of_week").collect()]
@@ -38,10 +38,10 @@ class TestConvertDayNumberToName:
         expected = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         assert day_names == expected
 
-    def test_invalid_day_number(self, databricks_spark):
+    def test_invalid_day_number(self, local_spark):
         """Invalid day numbers should return None"""
         data = [(0,), (8,), (None,)]
-        df = databricks_spark.createDataFrame(data, ["pickup_day_of_week"])
+        df = local_spark.createDataFrame(data, ["pickup_day_of_week"])
         
         result = convert_day_number_to_name(df)
         day_names = [row.day_name for row in result.collect()]
@@ -52,7 +52,7 @@ class TestConvertDayNumberToName:
 class TestAggregateByDayOfWeek:
     """Test day of week aggregation"""
 
-    def test_aggregation_columns_exist(self, databricks_spark, sample_silver_data):
+    def test_aggregation_columns_exist(self, local_spark, sample_silver_data):
         """Aggregated result should have all expected columns"""
         result = aggregate_by_day_of_week(sample_silver_data)
         
@@ -70,7 +70,7 @@ class TestAggregateByDayOfWeek:
         for col in expected_cols:
             assert col in result_columns
 
-    def test_correct_aggregation_values(self, databricks_spark):
+    def test_correct_aggregation_values(self, local_spark):
         """Aggregation should calculate correct values"""
         schema = StructType([
             StructField("pickup_day_of_week", IntegerType(), True),
@@ -84,7 +84,7 @@ class TestAggregateByDayOfWeek:
             (2, 5.0, 10.0, 20.0),
             (2, 3.0, 8.0, 15.0),
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = aggregate_by_day_of_week(df).collect()[0]
         
@@ -95,7 +95,7 @@ class TestAggregateByDayOfWeek:
         assert result.avg_fare == 9.0  # (10.0 + 8.0) / 2
         assert result.avg_speed == 17.5  # (20.0 + 15.0) / 2
 
-    def test_group_by_multiple_days(self, databricks_spark):
+    def test_group_by_multiple_days(self, local_spark):
         """Should create separate rows for each day of week"""
         schema = StructType([
             StructField("pickup_day_of_week", IntegerType(), True),
@@ -109,7 +109,7 @@ class TestAggregateByDayOfWeek:
             (2, 3.0, 8.0, 15.0),   # Monday
             (3, 4.0, 9.0, 18.0),   # Tuesday
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = aggregate_by_day_of_week(df)
         
@@ -119,7 +119,7 @@ class TestAggregateByDayOfWeek:
 class TestRoundMetricColumns:
     """Test metric rounding"""
 
-    def test_rounding_to_two_decimals(self, databricks_spark):
+    def test_rounding_to_two_decimals(self, local_spark):
         """Metrics should be rounded to 2 decimal places by default"""
         schema = StructType([
             StructField("pickup_day_of_week", IntegerType(), True),
@@ -134,7 +134,7 @@ class TestRoundMetricColumns:
         data = [
             (1, "Sunday", 10, 123.456789, 4.567891, 12.345678, 18.912345),
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = round_metric_columns(df).collect()[0]
         
@@ -143,7 +143,7 @@ class TestRoundMetricColumns:
         assert result.avg_fare == 12.35
         assert result.avg_speed == 18.91
 
-    def test_column_rename(self, databricks_spark):
+    def test_column_rename(self, local_spark):
         """Should rename pickup_day_of_week to day_of_week"""
         schema = StructType([
             StructField("pickup_day_of_week", IntegerType(), True),
@@ -158,7 +158,7 @@ class TestRoundMetricColumns:
         data = [
             (1, "Sunday", 10, 123.45, 4.56, 12.34, 18.91),
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = round_metric_columns(df)
         
@@ -171,7 +171,7 @@ class TestRoundMetricColumns:
 class TestSortByDayOfWeek:
     """Test sorting by day of week"""
 
-    def test_sort_order(self, databricks_spark):
+    def test_sort_order(self, local_spark):
         """Results should be sorted from Sunday (1) to Saturday (7)"""
         schema = StructType([
             StructField("day_of_week", IntegerType(), True),
@@ -185,14 +185,14 @@ class TestSortByDayOfWeek:
             (1, "Sunday"),
             (5, "Thursday"),
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = sort_by_day_of_week(df)
         sorted_days = [row.day_of_week for row in result.collect()]
         
         assert sorted_days == [1, 3, 5, 7]
 
-    def test_sort_maintains_all_columns(self, databricks_spark):
+    def test_sort_maintains_all_columns(self, local_spark):
         """Sorting should maintain all columns"""
         schema = StructType([
             StructField("day_of_week", IntegerType(), True),
@@ -204,7 +204,7 @@ class TestSortByDayOfWeek:
             (2, "Monday", 100),
             (1, "Sunday", 80),
         ]
-        df = databricks_spark.createDataFrame(data, schema)
+        df = local_spark.createDataFrame(data, schema)
         
         result = sort_by_day_of_week(df)
         

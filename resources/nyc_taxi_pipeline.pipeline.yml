@@ -29,3 +29,13 @@ resources:
       # Pipeline mode
       continuous: false
       development: ${var.pipeline_development}
+ 
+  jobs:
+    integration_test:
+      name: integration-test
+
+      tasks:
+        - task_key: run_tests
+
+          spark_python_task:
+            python_file: ../tests/run_integration.py

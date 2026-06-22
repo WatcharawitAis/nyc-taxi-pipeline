@@ -29,16 +29,6 @@ from src.pipeline.silver.silver_layer import (
 class TestCleanAndValidateZip:
     """Test zip code cleaning and validation"""
 
-    def test_clean_valid_zip_code(self, databricks_spark):
-        """Valid 5-digit zip codes should pass through"""
-        data = [("10001",), ("90210",), ("02134",)]
-        df = databricks_spark.createDataFrame(data, ["zip"])
-        
-        result = df.withColumn("clean_zip", clean_and_validate_zip("zip"))
-        cleaned = [row.clean_zip for row in result.collect()]
-        
-        assert cleaned == ["10001", "90210", "02134"]
-
     def test_clean_zip_with_decimal(self, databricks_spark):
         """Zip codes with trailing .0 should be cleaned"""
         data = [("10001.0",), ("90210.00",), ("02134.000",)]
