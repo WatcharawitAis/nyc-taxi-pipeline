@@ -13,4 +13,4 @@ def bronze_nyc_taxi_trips():
     Returns the raw NYC taxi trip data ingested from samples.nyctaxi.trips.
     Output: {catalog}.bronze.bronze_nyc_taxi_trips
     """
-    return spark.read.table("samples.nyctaxi.trips")  # noqa: F821
+    return spark.readStream.table("samples.nyctaxi.trips")  # noqa: F821

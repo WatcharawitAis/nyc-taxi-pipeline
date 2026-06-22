@@ -12,7 +12,7 @@ from pyspark.sql.types import (
 )
 
 # @pytest.fixture(scope="session")
-# def databricks_spark():
+# def spark():
 #     """Local Spark session for unit tests — runs on CI runner"""
 #     spark = (
 #         SparkSession.builder
@@ -26,16 +26,23 @@ from pyspark.sql.types import (
 
 
 
+# @pytest.fixture(scope="session")
+# def spark():
+#     """Databricks Spark session for integration tests — connects to cluster"""
+#     spark = (
+#         DatabricksSession.builder
+#         .serverless(True)
+#         .getOrCreate()
+#         )
+#     yield spark
+#     # ไม่ต้อง stop() เพราะ databricks-connect จัดการเอง
+
 @pytest.fixture(scope="session")
-def databricks_spark():
-    """Databricks Spark session for integration tests — connects to cluster"""
-    spark = (
-        DatabricksSession.builder
-        .serverless(True)
-        .getOrCreate()
-        )
-    yield spark
-    # ไม่ต้อง stop() เพราะ databricks-connect จัดการเอง
+def spark():
+    """
+    Returns the SparkSession object.
+    """
+    return SparkSession.getActiveSession()
 
 
 @pytest.fixture
@@ -52,7 +59,7 @@ def sample_taxi_schema():
 
 
 @pytest.fixture
-def sample_taxi_data(databricks_spark, sample_taxi_schema):
+def sample_taxi_data(spark, sample_taxi_schema):
     """ข้อมูลตัวอย่างสำหรับ unit tests"""
     data = [
         # Valid record
@@ -101,11 +108,11 @@ def sample_taxi_data(databricks_spark, sample_taxi_schema):
             12.0,
         ),
     ]
-    return databricks_spark.createDataFrame(data, schema=sample_taxi_schema)
+    return spark.createDataFrame(data, schema=sample_taxi_schema)
 
 
 @pytest.fixture
-def sample_silver_data(databricks_spark):
+def sample_silver_data(spark):
     """ข้อมูล silver layer สำหรับ integration tests"""
     schema = StructType([
         StructField("tpep_pickup_datetime", TimestampType(), True),
@@ -131,7 +138,7 @@ def sample_silver_data(databricks_spark):
         (datetime(2023, 1, 3, 12, 0, 0), datetime(2023, 1, 3, 12, 20, 0), 
          "10005", "10006", 3.0, 10.0, 20.0, 9.0, 12, 3),
     ]
-    return databricks_spark.createDataFrame(data, schema=schema)
+    return spark.createDataFrame(data, schema=schema)
 
 
 @pytest.fixture
