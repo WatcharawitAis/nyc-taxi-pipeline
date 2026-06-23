@@ -1,14 +1,5 @@
 """
 Integration tests for NYC Taxi Pipeline
-
-Tests end-to-end pipeline with REAL Delta tables in Unity Catalog.
-These tests write to test catalog, run transformations, and verify results.
-
-Prerequisites:
-- Test catalog 'dev_test' with CREATE/WRITE permissions
-- Databricks cluster with Unity Catalog enabled
-
-Run with: pytest tests/integration/test_pipeline.py -v --tb=short
 """
 
 import pytest
@@ -16,6 +7,11 @@ from pyspark.sql import functions as F
 from datetime import datetime
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, TimestampType, IntegerType
 
+from src.pipeline.utils.validations import (validate_datetime_columns, clean_and_validate_zip, apply_data_quality_filters)
+from src.pipeline.utils.calculations import (calculate_trip_duration, calculate_avg_speed)
+from src.pipeline.utils.transformations import extract_time_features, convert_day_number_to_name
+from src.pipeline.utils.aggregations import (aggregate_by_day_of_week, round_metric_columns, sort_by_day_of_week)
+from tests.conftest import spark
 
 # Test configuration
 TEST_CATALOG = "dev_test"
@@ -25,7 +21,7 @@ SILVER_TABLE = f"{TEST_CATALOG}.{TEST_SCHEMA}.silver_taxi"
 GOLD_TABLE = f"{TEST_CATALOG}.{TEST_SCHEMA}.gold_taxi_daily"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def setup_test_tables(spark):
     """Create test schema and cleanup before/after tests"""
     
@@ -37,8 +33,6 @@ def setup_test_tables(spark):
     spark.sql(f"DROP TABLE IF EXISTS {BRONZE_TABLE}")
     spark.sql(f"DROP TABLE IF EXISTS {SILVER_TABLE}")
     spark.sql(f"DROP TABLE IF EXISTS {GOLD_TABLE}")
-    
-    yield
     
     # Teardown: Cleanup after all tests (optional, comment if want to inspect)
     # spark.sql(f"DROP SCHEMA IF EXISTS {TEST_CATALOG}.{TEST_SCHEMA} CASCADE")
@@ -74,11 +68,6 @@ class TestBronzeToSilverIntegration:
         bronze_df.write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # 2. RUN TRANSFORMATION: Apply silver layer logic
-        from src.pipeline.silver.silver_layer import (
-            validate_datetime_columns, clean_and_validate_zip,
-            calculate_trip_duration, calculate_avg_speed,
-            extract_time_features, apply_data_quality_filters
-        )
         
         # Read from bronze table (real table!)
         df = spark.table(BRONZE_TABLE)
@@ -147,7 +136,6 @@ class TestBronzeToSilverIntegration:
         df.write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
         # Transform and write to silver
-        from src.pipeline.silver.silver_layer import clean_and_validate_zip
         
         df = spark.table(BRONZE_TABLE)
         df = df.withColumns({
@@ -195,12 +183,6 @@ class TestSilverToGoldIntegration:
         
         silver_df = spark.createDataFrame(silver_data, schema)
         silver_df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
-        
-        # 2. RUN TRANSFORMATION: Apply gold layer logic
-        from src.pipeline.gold.gold_layer import (
-            aggregate_by_day_of_week, convert_day_number_to_name,
-            round_metric_columns, sort_by_day_of_week
-        )
         
         # Read from silver table (real table!)
         df = spark.table(SILVER_TABLE)
@@ -261,12 +243,6 @@ class TestEndToEndPipeline:
         
         spark.createDataFrame(bronze_data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
-        # 2. SILVER: Transform bronze → silver
-        from src.pipeline.silver.silver_layer import (
-            validate_datetime_columns, clean_and_validate_zip,
-            calculate_trip_duration, calculate_avg_speed,
-            extract_time_features, apply_data_quality_filters
-        )
         
         df = spark.table(BRONZE_TABLE)
         df = validate_datetime_columns(df)
@@ -286,11 +262,6 @@ class TestEndToEndPipeline:
         df = apply_data_quality_filters(df)
         df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
         
-        # 3. GOLD: Transform silver → gold
-        from src.pipeline.gold.gold_layer import (
-            aggregate_by_day_of_week, convert_day_number_to_name,
-            round_metric_columns, sort_by_day_of_week
-        )
         
         df = spark.table(SILVER_TABLE)
         df = aggregate_by_day_of_week(df)
@@ -337,10 +308,6 @@ class TestEndToEndPipeline:
         
         spark.createDataFrame(data, schema).write.mode("overwrite").saveAsTable(BRONZE_TABLE)
         
-        # Transform with quality filters
-        from src.pipeline.silver.silver_layer import (
-            validate_datetime_columns, calculate_trip_duration, apply_data_quality_filters
-        )
         
         df = spark.table(BRONZE_TABLE)
         df = validate_datetime_columns(df)

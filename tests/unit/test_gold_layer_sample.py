@@ -15,9 +15,10 @@ from pyspark.sql.types import (
     IntegerType,
     StringType,
 )
+from tests.conftest import spark, sample_silver_data
 
-from src.pipeline.gold.gold_layer import (
-    convert_day_number_to_name,
+from src.pipeline.utils.transformations import convert_day_number_to_name
+from src.pipeline.utils.aggregations import (
     aggregate_by_day_of_week,
     round_metric_columns,
     sort_by_day_of_week,

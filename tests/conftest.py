@@ -10,7 +10,7 @@ from pyspark.sql.types import (
     TimestampType,
     IntegerType,
 )
-
+from databricks.connect import DatabricksSession
 # @pytest.fixture(scope="session")
 # def spark():
 #     """Local Spark session for unit tests — runs on CI runner"""
@@ -37,12 +37,13 @@ from pyspark.sql.types import (
 #     yield spark
 #     # ไม่ต้อง stop() เพราะ databricks-connect จัดการเอง
 
-@pytest.fixture(scope="session")
+
+@pytest.fixture
 def spark():
-    """
-    Returns the SparkSession object.
-    """
-    return SparkSession.getActiveSession()
+  # Create a SparkSession (the entry point to Spark functionality) on
+  # the cluster in the remote Databricks workspace. Unit tests do not
+  # have access to this SparkSession by default.
+  return DatabricksSession.builder.getOrCreate()
 
 
 @pytest.fixture
