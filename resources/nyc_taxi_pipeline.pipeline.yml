@@ -16,10 +16,10 @@ resources:
       # Pipeline source code using glob pattern
       libraries:
         - glob:
-            include: ../src/pipeline/**
+            include: ../src/**
       
       # Root path for pipeline code
-      root_path: ../src/pipeline
+      root_path: ../src
       
       # Compute configuration
       serverless: true
