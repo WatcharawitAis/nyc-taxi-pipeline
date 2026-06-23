@@ -14,15 +14,13 @@ def clean_and_validate_zip(col_name):
         pyspark.sql.Column: A column with cleaned and validated zip codes.
     """
     # แปลงเป็น string และ trim ช่องว่างก่อน
-
-    zip_pattern = r"^[0-9]+(\\.0+)?$"
+    zip_pattern = r"^[0-9]+(\.0+)?$"
     cleaned_col = F.trim(F.col(col_name).cast("string"))
 
     return F.when(
         cleaned_col.rlike(zip_pattern),
-        # ถ้าผ่านเงื่อนไข ให้ใช้ regex_replace ตัดจุดทศนิยมและเลข 0 ข้างหลังออก (เช่น "20023.0" -> "20023")
-        # โครงสร้างนี้จะไม่ทำลายเลข 0 ตัวหน้า เช่น "01234.0" -> "01234"
-        F.regexp_replace(cleaned_col, r"\\.0+$", ""),
+        
+        F.regexp_replace(cleaned_col, r"\.0+$", ""),
     ).otherwise(None)
 
 

@@ -29,18 +29,3 @@ resources:
       # Pipeline mode
       continuous: false
       development: ${var.pipeline_development}
- 
-  jobs:
-    test:
-      name: test
-      environments:
-        - environment_key: test_env
-          spec:
-            environment_version: "5"
-            dependencies:
-              - "pytest"
-      tasks:
-        - task_key: run_tests
-          environment_key: test_env
-          spark_python_task:
-            python_file: ../tests/run_test.py

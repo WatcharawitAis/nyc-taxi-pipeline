@@ -15,15 +15,17 @@ from pyspark.sql.types import (
     DoubleType,
     TimestampType,
 )
-
-from src.pipeline.silver.silver_layer import (
+from tests.conftest import spark
+from src.pipeline.utils.validations import (
     clean_and_validate_zip,
     validate_datetime_columns,
-    calculate_trip_duration,
-    calculate_avg_speed,
-    extract_time_features,
     apply_data_quality_filters,
 )
+from src.pipeline.utils.calculations import (
+    calculate_trip_duration,
+    calculate_avg_speed,
+)
+from src.pipeline.utils.transformations import extract_time_features
 
 
 class TestCleanAndValidateZip:
@@ -31,30 +33,30 @@ class TestCleanAndValidateZip:
 
     def test_clean_zip_with_decimal(self, spark):
         """Zip codes with trailing .0 should be cleaned"""
-        data = [("10001.0",), ("90210.00",), ("02134.000",)]
+        data = ["10001.0", "90210.00", "02134.000"]
         df = spark.createDataFrame(data, ["zip"])
         
-        result = df.withColumn("clean_zip", clean_and_validate_zip("zip"))
+        result = df.select("*", clean_and_validate_zip("zip").alias("clean_zip"))
         cleaned = [row.clean_zip for row in result.collect()]
         
-        assert cleaned == ["10001", "90210", "02134"]
+        assert cleaned == ["10001", "90210", "02134"], f"The result is {cleaned}"
 
     def test_preserve_leading_zeros(self, spark):
         """Leading zeros in zip codes should be preserved"""
         data = [("01234.0",), ("00501",), ("00901.00",)]
         df = spark.createDataFrame(data, ["zip"])
         
-        result = df.withColumn("clean_zip", clean_and_validate_zip("zip"))
+        result = df.select("*", clean_and_validate_zip("zip").alias("clean_zip"))
         cleaned = [row.clean_zip for row in result.collect()]
         
-        assert cleaned == ["01234", "00501", "00901"]
+        assert cleaned == ["01234", "00501", "00901"], f"The result is {cleaned}"
 
     def test_invalid_zip_becomes_null(self, spark):
         """Invalid zip codes should become NULL"""
         data = [("ABC12",), ("",), (None,), ("12.34",)]
         df = spark.createDataFrame(data, ["zip"])
         
-        result = df.withColumn("clean_zip", clean_and_validate_zip("zip"))
+        result = df.select("*", clean_and_validate_zip("zip").alias("clean_zip"))
         cleaned = [row.clean_zip for row in result.collect()]
         
         assert cleaned == [None, None, None, None]
@@ -76,8 +78,10 @@ class TestValidateDatetimeColumns:
         
         result = validate_datetime_columns(df)
         
-        assert "valid_pickup_datetime" in result.columns
-        assert "valid_dropoff_datetime" in result.columns
+        # Compute columns once to avoid multiple Analyze RPCs
+        result_columns = result.columns
+        assert "valid_pickup_datetime" in result_columns
+        assert "valid_dropoff_datetime" in result_columns
         assert result.filter(F.col("valid_pickup_datetime").isNotNull()).count() == 1
 
     def test_null_timestamps(self, spark):

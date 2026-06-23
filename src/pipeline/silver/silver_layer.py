@@ -6,21 +6,15 @@ try:
 except ImportError:
     dlt = None  # For testing environments where dlt is not available
 
-# Import utility functions
-from utils.validations import (
+from src.pipeline.utils.validations import (
     apply_data_quality_filters,
     clean_and_validate_zip,
     validate_datetime_columns,
 )
-from utils.calculations import calculate_avg_speed, calculate_trip_duration
-from utils.transformations import extract_time_features
+from src.pipeline.utils.calculations import calculate_avg_speed, calculate_trip_duration
+from src.pipeline.utils.transformations import extract_time_features
 
 
-# ========================================
-# DLT TABLE DEFINITION
-# ========================================
-
-# Only define DLT tables when dlt module is available (Databricks Runtime)
 
 if dlt is not None:
 

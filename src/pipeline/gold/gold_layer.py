@@ -3,13 +3,13 @@ try:
 except ImportError:
     dlt = None  # For testing environments where dlt is not available
 
-# Import utility functions
-from utils.aggregations import (
+# Import utility functions using relative imports
+from src.pipeline.utils.aggregations import (
     aggregate_by_day_of_week,
     round_metric_columns,
     sort_by_day_of_week,
 )
-from utils.transformations import convert_day_number_to_name
+from src.pipeline.utils.transformations import convert_day_number_to_name
 
 
 # ========================================
@@ -17,7 +17,6 @@ from utils.transformations import convert_day_number_to_name
 # ========================================
 
 # Only define DLT views when dlt module is available (Databricks Runtime)
-
 
 if dlt is not None:
 
@@ -41,7 +40,7 @@ if dlt is not None:
         4. Sort by day of week
         """
         # Read from Silver layer (silver schema)
-        df = dlt.readStream("silver.silver_nyc_taxi_trips")
+        df = dlt.read("silver.silver_nyc_taxi_trips")
 
         # Apply transformations using testable functions
 
