@@ -12,3 +12,4 @@ display(silver)
 
 gold = spark.sql("SELECT * FROM biap.default.dayofweek LIMIT 10")
 display(gold)
+

@@ -3,23 +3,29 @@ resources:
     nyc_taxi_pipeline:
       name: NYC Taxi Data Pipeline - ${bundle.target}
       
+      # Unity Catalog configuration
       catalog: ${var.catalog}
-      target: ${var.schema}
+      target: ${var.bronze_schema}  # Default output schema is bronze
       
+      # Configuration parameters accessible in pipeline code via spark.conf
+      configuration:
+        bronze_schema: ${var.bronze_schema}
+        silver_schema: ${var.silver_schema}
+        gold_schema: ${var.gold_schema}
+      
+      # Pipeline source code using glob pattern
       libraries:
         - glob:
-            include: ../pipeline/transformations/**
+            include: ../src/pipeline/**
       
-      root_path: ../pipeline
+      # Root path for pipeline code
+      root_path: ../src/pipeline
       
+      # Compute configuration
       serverless: true
-      
-      continuous: false
-      development: ${var.pipeline_development}
       photon: true
-      
       channel: current
       
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
+      # Pipeline mode
+      continuous: false
+      development: ${var.pipeline_development}
