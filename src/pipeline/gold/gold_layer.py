@@ -4,12 +4,12 @@ except ImportError:
     dp = None  # For testing environments where dlt is not available
 
 # Import utility functions using relative imports
-from src.pipeline.utils.aggregations import (
+from utils.aggregations import (
     aggregate_by_day_of_week,
     round_metric_columns,
     sort_by_day_of_week,
 )
-from src.pipeline.utils.transformations import convert_day_number_to_name
+from utils.transformations import convert_day_number_to_name
 
 
 # ========================================
