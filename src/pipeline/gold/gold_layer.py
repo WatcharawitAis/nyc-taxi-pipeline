@@ -1,7 +1,7 @@
 try:
-    import dlt
+    from pyspark import pipelines as dp
 except ImportError:
-    dlt = None  # For testing environments where dlt is not available
+    dp = None  # For testing environments where dlt is not available
 
 # Import utility functions using relative imports
 from src.pipeline.utils.aggregations import (
@@ -18,9 +18,9 @@ from src.pipeline.utils.transformations import convert_day_number_to_name
 
 # Only define DLT views when dlt module is available (Databricks Runtime)
 
-if dlt is not None:
+if dp is not None:
 
-    @dlt.table(
+    @dp.table(
         name="gold.day_of_week_metrics",
         comment="Daily aggregated metrics for the number of rides, "
         "average distance, average fare, and average speed for each day of the week.",
@@ -40,7 +40,7 @@ if dlt is not None:
         4. Sort by day of week
         """
         # Read from Silver layer (silver schema)
-        df = dlt.read("silver.silver_nyc_taxi_trips")
+        df = dp.read("silver.silver_nyc_taxi_trips")  # noqa: F821
 
         # Apply transformations using testable functions
 

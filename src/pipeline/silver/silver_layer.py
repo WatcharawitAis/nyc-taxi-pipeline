@@ -6,13 +6,13 @@ try:
 except ImportError:
     dlt = None  # For testing environments where dlt is not available
 
-from src.pipeline.utils.validations import (
+from utils.validations import (
     apply_data_quality_filters,
     clean_and_validate_zip,
     validate_datetime_columns,
 )
-from src.pipeline.utils.calculations import calculate_avg_speed, calculate_trip_duration
-from src.pipeline.utils.transformations import extract_time_features
+from utils.calculations import calculate_avg_speed, calculate_trip_duration
+from utils.transformations import extract_time_features
 
 
 
@@ -35,7 +35,7 @@ if dlt is not None:
         - CAST: Zip codes to string (preserve leading zeros)
         """
         # Read from Bronze layer (bronze schema)
-        df = dlt.readStream("bronze.bronze_nyc_taxi_trips")
+        df = dlt.read_stream("bronze.bronze_nyc_taxi_trips")  # noqa: F821
 
         # Apply transformations using testable functions
 

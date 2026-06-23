@@ -1,7 +1,7 @@
-import dlt
+# import dlt
+from pyspark import pipelines as dp
 
-
-@dlt.table(
+@dp.table(
     name="bronze.bronze_nyc_taxi_trips",
     comment="Raw NYC taxi trip data ingested from samples.nyctaxi.trips",
     # schema is not specified - will use target schema (bronze) from pipeline config
