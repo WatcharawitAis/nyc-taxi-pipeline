@@ -4,14 +4,16 @@ except ImportError:
     dp = None  # For testing environments where dlt is not available
 
 # Import utility functions using relative imports
-from utils.aggregations import (
+from src.pipeline.utils.spark_session import spark
+from src.pipeline.utils.aggregations import (
     aggregate_by_day_of_week,
     round_metric_columns,
     sort_by_day_of_week,
 )
-from utils.transformations import convert_day_number_to_name
+from src.pipeline.utils.transformations import convert_day_number_to_name
 
-
+gold_schema_name = spark.conf.get("gold_schema")
+silver_schema_name = spark.conf.get("silver_schema")
 # ========================================
 # DLT VIEW DEFINITION
 # ========================================
@@ -21,7 +23,7 @@ from utils.transformations import convert_day_number_to_name
 if dp is not None:
 
     @dp.table(
-        name="gold.day_of_week_metrics",
+        name=f"{gold_schema_name}.day_of_week_metrics",
         comment="Daily aggregated metrics for the number of rides, "
         "average distance, average fare, and average speed for each day of the week.",
     )
@@ -40,7 +42,7 @@ if dp is not None:
         4. Sort by day of week
         """
         # Read from Silver layer (silver schema)
-        df = dp.read("silver.silver_nyc_taxi_trips")  # noqa: F821
+        df = dp.read(f"{silver_schema_name}.silver_nyc_taxi_trips")  # noqa: F821
 
         # Apply transformations using testable functions
 

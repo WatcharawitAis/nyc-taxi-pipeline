@@ -13,17 +13,21 @@ resources:
         silver_schema: ${var.silver_schema}
         gold_schema: ${var.gold_schema}
       
-      # Pipeline source code using glob pattern
-      libraries:
-        - glob:
-            include: ../src/pipeline/**
       
-      # Root path for pipeline code
-      root_path: ../src/pipeline
+      libraries:
+        - file:
+            path: ../src/pipeline/pipeline.py
+      # # # Pipeline source code using glob pattern
+      # libraries:
+      #   - glob:
+      #       include: ./src/**
+      
+      # # Root path for pipeline code
+      # root_path: ../src/pipeline
       
       # Compute configuration
       serverless: true
-      photon: true
+      # photon: true
       channel: current
       
       # Pipeline mode
