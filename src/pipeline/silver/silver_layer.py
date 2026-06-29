@@ -1,25 +1,26 @@
 from pyspark.sql import functions as F
-
+from pyspark import pipelines as dp
+from src.pipeline.utils.spark_session import spark
 
 try:
-    import dlt
+    from pyspark import pipelines as dp
 except ImportError:
-    dlt = None  # For testing environments where dlt is not available
+    dp = None  # For testing environments where dlt is not available
 
-from utils.validations import (
+from src.pipeline.utils.validations import (
     apply_data_quality_filters,
     clean_and_validate_zip,
     validate_datetime_columns,
 )
-from utils.calculations import calculate_avg_speed, calculate_trip_duration
-from utils.transformations import extract_time_features
+from src.pipeline.utils.calculations import calculate_avg_speed, calculate_trip_duration
+from src.pipeline.utils.transformations import extract_time_features
 
+silver_schema_name = spark.conf.get("silver_schema")
 
+if dp is not None:
 
-if dlt is not None:
-
-    @dlt.table(
-        name="silver.silver_nyc_taxi_trips",
+    @dp.table(
+        name=f"{silver_schema_name}.silver_nyc_taxi_trips",
         comment="Cleaned NYC taxi trip data with quality flags and derived metrics",
     )
     def silver_nyc_taxi_trips():
@@ -35,7 +36,7 @@ if dlt is not None:
         - CAST: Zip codes to string (preserve leading zeros)
         """
         # Read from Bronze layer (bronze schema)
-        df = dlt.read_stream("bronze.bronze_nyc_taxi_trips")  # noqa: F821
+        df = dp.read_stream("bronze.bronze_nyc_taxi_trips")  # noqa: F821
 
         # Apply transformations using testable functions
 
