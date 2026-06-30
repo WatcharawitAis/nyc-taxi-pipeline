@@ -19,7 +19,6 @@ def clean_and_validate_zip(col_name):
 
     return F.when(
         cleaned_col.rlike(zip_pattern),
-        
         F.regexp_replace(cleaned_col, r"\.0+$", ""),
     ).otherwise(None)
 
@@ -41,8 +40,8 @@ def validate_datetime_columns(
     """
     return df.withColumns(
         {
-            "valid_pickup_datetime": F.to_timestamp(pickup_col),
-            "valid_dropoff_datetime": F.to_timestamp(dropoff_col),
+            "tpep_pickup_datetime": F.to_timestamp(pickup_col),
+            "tpep_dropoff_datetime": F.to_timestamp(dropoff_col),
         }
     )
 

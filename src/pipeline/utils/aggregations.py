@@ -41,7 +41,7 @@ def round_metric_columns(df, precision=2):
         DataFrame with rounded metrics
     """
     return df.select(
-        F.col("pickup_day_of_week").alias("day_of_week"),
+        F.col("pickup_day_of_week"),
         F.col("day_name"),
         F.col("total_rides"),
         F.round(F.col("total_fare"), precision).alias("total_fare"),
@@ -51,7 +51,7 @@ def round_metric_columns(df, precision=2):
     )
 
 
-def sort_by_day_of_week(df, day_col="day_of_week"):
+def sort_by_day_of_week(df, day_col="pickup_day_of_week"):
     """
     Sorts DataFrame by day of week (1=Sunday to 7=Saturday).
 
