@@ -1,0 +1,54 @@
+[project]
+name = "nyc-taxi-pipeline"
+version = "1.0.0"
+requires-python = ">=3.10"
+
+[tool.pylint.main]
+ignore-paths = ["explorations/"]
+
+[tool.pylint.messages_control]
+disable = [
+    "import-error",             # E0401 - PySpark/Databricks not resolvable statically
+    "no-member",                # E1101 - DLT runtime APIs not resolvable statically
+    "redefined-outer-name",     # W0621 - pytest fixture pattern
+    "unused-argument",          # R0903 - pytest pattern
+    "too-few-public-methods",
+]
+
+[tool.pytest.ini_options]
+# Test discovery patterns
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test paths
+testpaths = ["tests/"]
+
+# Add src directory to Python path
+pythonpath = ["."]
+
+# Output options
+addopts = "-v --tb=short --strict-markers --color=yes -ra"
+
+# Markers
+markers = [
+    "unit: Unit tests - test individual functions in isolation (fast, no external dependencies)",
+    "integration: Integration tests - test end-to-end flows (requires Databricks cluster)",
+    "slow: Tests that take significant time to run",
+    "bronze: Tests related to bronze layer",
+    "silver: Tests related to silver layer",
+    "gold: Tests related to gold layer",
+    "data_quality: Tests that verify data quality rules",
+]
+
+# Log configuration
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Warning filters
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

@@ -1,3 +1,5 @@
+"""This file for spark session creation"""
+
 from pyspark.sql import SparkSession
 
-spark = SparkSession.getActiveSession()
+SPARK = SparkSession.getActiveSession()
