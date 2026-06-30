@@ -3,7 +3,7 @@
 from pyspark.sql import functions as F
 
 
-def extract_time_features(df, datetime_col="valid_pickup_datetime"):
+def extract_time_features(df, datetime_col="tpep_pickup_datetime"):
     """
     Extracts hour and day of week from datetime column.
 

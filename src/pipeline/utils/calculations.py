@@ -4,7 +4,7 @@ from pyspark.sql import functions as F
 
 
 def calculate_trip_duration(
-    df, pickup_col="valid_pickup_datetime", dropoff_col="valid_dropoff_datetime"
+    df, pickup_col="tpep_pickup_datetime", dropoff_col="tpep_dropoff_datetime"
 ):
     """Calculates trip duration in minutes."""
     # แก้ lint: ใช้ .withColumns() แทน .withColumn()

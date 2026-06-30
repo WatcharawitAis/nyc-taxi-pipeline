@@ -1,7 +1,9 @@
-import pytest
-from pyspark.sql import SparkSession
-from databricks.connect import DatabricksSession
+"""This is a pytest configuration file"""
+
 from datetime import datetime
+
+import pytest
+from databricks.connect import DatabricksSession
 from pyspark.sql.types import (
     StructType,
     StructField,
@@ -10,58 +12,52 @@ from pyspark.sql.types import (
     TimestampType,
     IntegerType,
 )
-from databricks.connect import DatabricksSession
-# @pytest.fixture(scope="session")
-# def spark():
-#     """Local Spark session for unit tests — runs on CI runner"""
-#     spark = (
-#         SparkSession.builder
-#         .remote("local")
-#         .appName("unit-tests")
-#         .config("spark.sql.shuffle.partitions", "1")
-#         .getOrCreate()
-#     )
-#     yield spark
-#     spark.stop()
 
-
-
-# @pytest.fixture(scope="session")
-# def spark():
-#     """Databricks Spark session for integration tests — connects to cluster"""
-#     spark = (
-#         DatabricksSession.builder
-#         .serverless(True)
-#         .getOrCreate()
-#         )
-#     yield spark
-#     # ไม่ต้อง stop() เพราะ databricks-connect จัดการเอง
+from src.pipeline.utils.constraints import BRONZE_COLUMNS, SILVER_COLUMNS, GOLD_COLUMNS
 
 
 @pytest.fixture
 def spark():
-  # Create a SparkSession (the entry point to Spark functionality) on
-  # the cluster in the remote Databricks workspace. Unit tests do not
-  # have access to this SparkSession by default.
-  return DatabricksSession.builder.getOrCreate()
+    """Create a SparkSession (the entry point to Spark functionality)"""
+    return DatabricksSession.builder.getOrCreate()
 
 
 @pytest.fixture
 def sample_taxi_schema():
-    """Schema สำหรับ NYC taxi data"""
-    return StructType([
-        StructField("tpep_pickup_datetime", TimestampType(), True),
-        StructField("tpep_dropoff_datetime", TimestampType(), True),
-        StructField("pickup_zip", StringType(), True),
-        StructField("dropoff_zip", StringType(), True),
-        StructField("trip_distance", DoubleType(), True),
-        StructField("fare_amount", DoubleType(), True),
-    ])
+    """Schema for NYC taxi data"""
+    return StructType(
+        [
+            StructField("tpep_pickup_datetime", TimestampType(), True),
+            StructField("tpep_dropoff_datetime", TimestampType(), True),
+            StructField("pickup_zip", StringType(), True),
+            StructField("dropoff_zip", StringType(), True),
+            StructField("trip_distance", DoubleType(), True),
+            StructField("fare_amount", DoubleType(), True),
+        ]
+    )
+
+@pytest.fixture
+def sample_taxi_silver_schema():
+    """Silver Schema for NYC taxi data"""
+    return StructType(
+        [
+            StructField("tpep_pickup_datetime", TimestampType(), True),
+            StructField("tpep_dropoff_datetime", TimestampType(), True),
+            StructField("pickup_zip", StringType(), True),
+            StructField("dropoff_zip", StringType(), True),
+            StructField("trip_distance", DoubleType(), True),
+            StructField("fare_amount", DoubleType(), True),
+            StructField("trip_duration_minutes", DoubleType(), True),
+            StructField("avg_speed_mph", DoubleType(), True),
+            StructField("pickup_hour", IntegerType(), True),
+            StructField("pickup_day_of_week", IntegerType(), True),
+        ]
+    )
 
 
 @pytest.fixture
 def sample_taxi_data(spark, sample_taxi_schema):
-    """ข้อมูลตัวอย่างสำหรับ unit tests"""
+    """Sample data for unit tests"""
     data = [
         # Valid record
         (
@@ -113,66 +109,69 @@ def sample_taxi_data(spark, sample_taxi_schema):
 
 
 @pytest.fixture
-def sample_silver_data(spark):
-    """ข้อมูล silver layer สำหรับ integration tests"""
-    schema = StructType([
-        StructField("tpep_pickup_datetime", TimestampType(), True),
-        StructField("tpep_dropoff_datetime", TimestampType(), True),
-        StructField("pickup_zip", StringType(), True),
-        StructField("dropoff_zip", StringType(), True),
-        StructField("trip_distance", DoubleType(), True),
-        StructField("fare_amount", DoubleType(), True),
-        StructField("trip_duration_minutes", DoubleType(), True),
-        StructField("avg_speed_mph", DoubleType(), True),
-        StructField("pickup_hour", IntegerType(), True),
-        StructField("pickup_day_of_week", IntegerType(), True),
-    ])
-    
-    data = [
-        # Sunday
-        (datetime(2023, 1, 1, 10, 0, 0), datetime(2023, 1, 1, 10, 30, 0), 
-         "10001", "10002", 5.5, 15.0, 30.0, 11.0, 10, 1),
-        # Monday
-        (datetime(2023, 1, 2, 11, 0, 0), datetime(2023, 1, 2, 11, 15, 0), 
-         "10003", "10004", 2.3, 8.5, 15.0, 9.2, 11, 2),
-        # Tuesday
-        (datetime(2023, 1, 3, 12, 0, 0), datetime(2023, 1, 3, 12, 20, 0), 
-         "10005", "10006", 3.0, 10.0, 20.0, 9.0, 12, 3),
-    ]
-    return spark.createDataFrame(data, schema=schema)
+def sample_silver_data(spark, sample_taxi_silver_schema):
+    """silver layer data for integration tests"""
+    data =  [
+            # Sunday (day 1)
+            (
+                datetime(2023, 1, 1, 10, 0),
+                datetime(2023, 1, 1, 10, 30),
+                "10001",
+                "10002",
+                5.5,
+                15.0,
+                30.0,
+                11.0,
+                10,
+                1,
+            ),
+            # Monday (day 2)
+            (
+                datetime(2023, 1, 2, 11, 0),
+                datetime(2023, 1, 2, 11, 45),
+                "10003",
+                "10004",
+                8.2,
+                25.5,
+                45.0,
+                10.9,
+                11,
+                2,
+            ),
+            (
+                datetime(2023, 1, 2, 14, 0),
+                datetime(2023, 1, 2, 14, 30),
+                "10005",
+                "10006",
+                3.0,
+                12.0,
+                30.0,
+                6.0,
+                14,
+                2,
+            ),
+            # Tuesday (day 3)
+            (
+                datetime(2023, 1, 3, 12, 0),
+                datetime(2023, 1, 3, 12, 30),
+                "10001",
+                "10002",
+                6.5,
+                18.5,
+                30.0,
+                13.0,
+                12,
+                3,
+            ),
+        ]
+    return spark.createDataFrame(data, schema=sample_taxi_silver_schema)
 
 
 @pytest.fixture
 def expected_columns():
-    """Expected column names สำหรับแต่ละ layer"""
+    """Expected column names for each layer"""
     return {
-        "bronze": [
-            "tpep_pickup_datetime",
-            "tpep_dropoff_datetime", 
-            "pickup_zip",
-            "dropoff_zip",
-            "trip_distance",
-            "fare_amount",
-        ],
-        "silver": [
-            "tpep_pickup_datetime",
-            "tpep_dropoff_datetime",
-            "pickup_zip",
-            "dropoff_zip",
-            "trip_distance",
-            "fare_amount",
-            "trip_duration_minutes",
-            "avg_speed_mph",
-            "pickup_hour",
-            "pickup_day_of_week",
-        ],
-        "gold": [
-            "day_of_week",
-            "day_name",
-            "total_rides",
-            "total_fare",
-            "avg_distance",
-            "avg_fare",
-            "avg_speed",
-        ],
+        "bronze": BRONZE_COLUMNS,
+        "silver": SILVER_COLUMNS,
+        "gold": GOLD_COLUMNS,
     }

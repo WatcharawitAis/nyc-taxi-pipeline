@@ -12,18 +12,18 @@ resources:
         bronze_schema: ${var.bronze_schema}
         silver_schema: ${var.silver_schema}
         gold_schema: ${var.gold_schema}
-      
-      # Pipeline source code using glob pattern
+  
       libraries:
-        - glob:
-            include: ../src/pipeline/**
+        - file:
+            path: ../src/pipeline/pipeline.py
+
+      # Sets the project root for sys.path
       
-      # Root path for pipeline code
-      root_path: ../src/pipeline
+      root_path: ../
       
       # Compute configuration
       serverless: true
-      photon: true
+      # photon: true
       channel: current
       
       # Pipeline mode
