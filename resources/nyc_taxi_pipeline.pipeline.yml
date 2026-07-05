@@ -16,14 +16,9 @@ resources:
       libraries:
         - file:
             path: ../src/pipeline/pipeline.py
-
-      # Sets the project root for sys.path
-      
-      root_path: ../
       
       # Compute configuration
       serverless: true
-      # photon: true
       channel: current
       
       # Pipeline mode
