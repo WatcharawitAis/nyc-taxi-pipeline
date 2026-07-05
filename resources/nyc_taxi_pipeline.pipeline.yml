@@ -16,6 +16,10 @@ resources:
       libraries:
         - file:
             path: ../src/pipeline/pipeline.py
+
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}
       
       # Compute configuration
       serverless: true
