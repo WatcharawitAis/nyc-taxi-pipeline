@@ -10,12 +10,18 @@ display(bronze)
 
 # COMMAND ----------
 
-silver = spark.sql("SELECT * FROM biap.default.silver_nyc_taxi_trips LIMIT 10")
+from pyspark.sql.functions import size
+silver = spark.sql("SELECT * FROM biap_dev.silver.silver_nyc_taxi_trips")
+silver = silver.where((size(silver["_errors"]) > 0) | (size(silver["_warnings"]) > 0))
 display(silver)
-
 
 # COMMAND ----------
 
-gold = spark.sql("SELECT * FROM biap.default.dayofweek LIMIT 10")
+df.select("_errors", "_warnings").show(5, truncate=False)
+df.printSchema()
+
+# COMMAND ----------
+
+gold = spark.sql("SELECT * FROM biap_dev.gold.day_of_week_metrics LIMIT 10")
 display(gold)
 

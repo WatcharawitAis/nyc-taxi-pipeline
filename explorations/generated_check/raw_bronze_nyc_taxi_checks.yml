@@ -1,0 +1,84 @@
+- check:
+    arguments:
+      column: tpep_pickup_datetime
+    function: is_not_null
+  criticality: error
+  name: tpep_pickup_datetime_is_null
+- check:
+    arguments:
+      column: tpep_pickup_datetime
+      max_limit: 2016-03-01T00:00:00.000000+0000
+      min_limit: 2016-01-01T00:00:00.000000+0000
+    function: is_in_range
+  criticality: error
+  name: tpep_pickup_datetime_isnt_in_range
+- check:
+    arguments:
+      column: tpep_dropoff_datetime
+    function: is_not_null
+  criticality: error
+  name: tpep_dropoff_datetime_is_null
+- check:
+    arguments:
+      column: tpep_dropoff_datetime
+      max_limit: 2016-03-01T00:00:00.000000+0000
+      min_limit: 2016-01-01T00:00:00.000000+0000
+    function: is_in_range
+  criticality: error
+  name: tpep_dropoff_datetime_isnt_in_range
+- check:
+    arguments:
+      column: trip_distance
+    function: is_not_null
+  criticality: error
+  name: trip_distance_is_null
+- check:
+    arguments:
+      column: trip_distance
+      max_limit: 13.753856332055785
+      min_limit: 0.0
+    function: is_in_range
+  criticality: error
+  name: trip_distance_isnt_in_range
+- check:
+    arguments:
+      column: fare_amount
+    function: is_not_null
+  criticality: error
+  name: fare_amount_is_null
+- check:
+    arguments:
+      column: fare_amount
+      max_limit: 43.9141783064353
+      min_limit: 2.5
+    function: is_in_range
+  criticality: error
+  name: fare_amount_isnt_in_range
+- check:
+    arguments:
+      column: pickup_zip
+    function: is_not_null
+  criticality: error
+  name: pickup_zip_is_null
+- check:
+    arguments:
+      column: pickup_zip
+      max_limit: 11129
+      min_limit: 10001
+    function: is_in_range
+  criticality: error
+  name: pickup_zip_isnt_in_range
+- check:
+    arguments:
+      column: dropoff_zip
+    function: is_not_null
+  criticality: error
+  name: dropoff_zip_is_null
+- check:
+    arguments:
+      column: dropoff_zip
+      max_limit: 11360
+      min_limit: 9003
+    function: is_in_range
+  criticality: error
+  name: dropoff_zip_isnt_in_range
