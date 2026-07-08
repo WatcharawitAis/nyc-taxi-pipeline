@@ -19,7 +19,8 @@ resources:
 
       environment:
         dependencies:
-          - --editable ${workspace.file_path}
+          - ../dist/*.whl
+          - databricks-labs-dqx==0.8.0
       
       # Compute configuration
       serverless: true

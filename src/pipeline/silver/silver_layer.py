@@ -1,12 +1,26 @@
 """Pipeline for silver layer"""
 
 from pyspark import pipelines as dp
+from databricks.sdk import WorkspaceClient
+from databricks.labs.dqx.config import FileChecksStorageConfig, InputConfig, OutputConfig
+from databricks.labs.dqx.engine import DQEngine
 
 from src.pipeline.utils.spark_session import SPARK as spark
+from src.pipeline.utils.rules_module import get_rules_by_names
 from src.pipeline.silver.silver_pipelines import silver_pipeline
 
-SILVER_SCHEMA_NAME = spark.conf.get("silver_schema")
 
+SILVER_SCHEMA_NAME = spark.conf.get("silver_schema")
+BRONZE_SCHEMA_NAME = spark.conf.get("bronze_schema")
+
+dq_engine = DQEngine(WorkspaceClient())
+
+
+CHECKS = dq_engine.load_checks(
+    config=FileChecksStorageConfig(
+        location=f"../checks/silver_nyc_taxi_checks.yml"
+    )
+)
 
 @dp.table(
     name=f"{SILVER_SCHEMA_NAME}.silver_nyc_taxi_trips",
@@ -14,15 +28,12 @@ SILVER_SCHEMA_NAME = spark.conf.get("silver_schema")
 )
 def silver_nyc_taxi_trips():
     """Silver Layer: Cleaned and enriched NYC taxi trip data
-
-    Output: {catalog}.silver.silver_nyc_taxi_trips
-
-    Data Quality Rules:
-    - VALIDATE: DateTime must be parseable timestamps
-    - REMOVE: Negative fares, zero distance, zero fares (invalid data)
-    - ADD: Derived metrics (trip duration, average speed, time of day)
-    - CAST: Zip codes to string (preserve leading zeros)
     """
-    df = dp.read_stream("bronze.bronze_nyc_taxi_trips")
-    clean_df = silver_pipeline(df)
-    return clean_df
+    df = dp.read_stream(f"{BRONZE_SCHEMA_NAME}.bronze_nyc_taxi_trips")
+    transformed_df = silver_pipeline(df)
+    
+    cleaned_df = dq_engine.apply_checks_by_metadata(transformed_df, CHECKS)
+
+    return cleaned_df
+
+
