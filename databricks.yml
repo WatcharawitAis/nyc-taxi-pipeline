@@ -1,7 +1,12 @@
 bundle:
   name: nyc-taxi
 
-# Variables สำหรับใช้ใน resource files
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+# Variables for resource files
 variables:
   catalog:
     description: Unity Catalog name
@@ -60,7 +65,7 @@ targets:
     mode: production
     
     workspace:
-      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+      root_path: /Workspace/${workspace.current_user.userName}/nyc-taxi-pipeline/.bundle/${bundle.name}/${bundle.target}
     
     variables:
       catalog: biap_prod
@@ -68,3 +73,7 @@ targets:
       silver_schema: silver
       gold_schema: gold
       pipeline_development: false
+
+    permissions:
+      - user_name: watchaaq@ais.co.th
+        level: CAN_MANAGE

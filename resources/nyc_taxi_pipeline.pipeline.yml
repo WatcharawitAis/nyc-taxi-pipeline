@@ -16,6 +16,11 @@ resources:
       libraries:
         - file:
             path: ../src/pipeline/pipeline.py
+
+      environment:
+        dependencies:
+          - ../dist/*.whl
+          - databricks-labs-dqx==0.8.0
       
       # Compute configuration
       serverless: true

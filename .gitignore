@@ -1,6 +1,7 @@
 # Databricks bundle deployment state
 .bundle/
 .databricks/
+dist/
 
 # Python
 __pycache__/

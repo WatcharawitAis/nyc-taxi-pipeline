@@ -2,6 +2,7 @@
 
 from pyspark import pipelines as dp
 from src.pipeline.utils.spark_session import SPARK as spark
+from src.pipeline.utils.rules_module import get_rules_by_names
 
 
 BRONZE_SCHEMA_NAME = spark.conf.get("bronze_schema")

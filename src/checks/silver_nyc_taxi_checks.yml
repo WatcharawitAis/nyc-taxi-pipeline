@@ -1,0 +1,113 @@
+# 
+- check:
+    arguments:
+      column: tpep_pickup_datetime
+    function: is_not_null
+  criticality: error
+  name: tpep_pickup_datetime_is_null
+
+# 
+- check:
+    arguments:
+      column: tpep_dropoff_datetime
+    function: is_not_null
+  criticality: error
+  name: tpep_dropoff_datetime_is_null
+
+- check:
+    arguments:
+      column: pickup_zip
+    function: is_not_null
+  criticality: error
+  name: pickup_zip_is_null
+
+
+- check:
+    arguments:
+      column: dropoff_zip
+    function: is_not_null
+  criticality: error
+  name: dropoff_zip_is_null
+
+- check:
+    arguments:
+      column: trip_distance
+    function: is_not_null
+  criticality: error
+  name: trip_distance_is_null
+
+
+
+- check:
+    arguments:
+      column: fare_amount
+    function: is_not_null
+  criticality: error
+  name: fare_amount_is_null
+
+- check:
+    function: is_not_less_than
+    arguments:
+      column: fare_amount
+      limit: 0
+  criticality: error
+  name: fare_amount_is_not_less_than_zero
+
+# - check:
+#     function: is_not_equal_to
+#     arguments:
+#       column: fare_amount
+#       value: 0
+#   criticality: error
+#   name: fare_amount_is_not_equal_to_zero
+  
+
+- check:
+    arguments:
+      column: trip_duration_minutes
+    function: is_not_null
+  criticality: error
+  name: trip_duration_minutes_is_null
+
+- check:
+    arguments:
+      column: avg_speed_mph
+    function: is_not_null
+  criticality: error
+  name: avg_speed_mph_is_null
+
+- check:
+    arguments:
+      column: pickup_hour
+    function: is_not_null
+  criticality: error
+  name: pickup_hour_is_null
+- check:
+    arguments:
+      column: pickup_hour
+      max_limit: 23
+      min_limit: 0
+    function: is_in_range
+  criticality: error
+  name: pickup_hour_isnt_in_range
+- check:
+    arguments:
+      column: pickup_day_of_week
+    function: is_not_null
+  criticality: error
+  name: pickup_day_of_week_is_null
+- check:
+    arguments:
+      allowed:
+      - 5
+      - 2
+      - 6
+      - 7
+      - 4
+      - 1
+      - 3
+      column: pickup_day_of_week
+    function: is_in_list
+  criticality: error
+  name: pickup_day_of_week_other_value
+
