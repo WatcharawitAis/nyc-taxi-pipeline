@@ -1,0 +1,58 @@
+- check:
+    arguments:
+      column: pickup_day_of_week
+    function: is_not_null
+  criticality: error
+  name: pickup_day_of_week_is_null
+
+- check:
+    arguments:
+      column: pickup_day_of_week
+      max_limit: 7
+      min_limit: 1
+    function: is_in_range
+  criticality: error
+  name: pickup_day_of_week_isnt_in_range
+
+- check:
+    arguments:
+      column: day_name
+      trim_strings: true
+    function: is_not_null_and_not_empty
+  criticality: error
+  name: day_name_is_null_or_empty
+
+- check:
+    arguments:
+      column: total_rides
+    function: is_not_null
+  criticality: error
+  name: total_rides_is_null
+
+- check:
+    arguments:
+      column: total_fare
+    function: is_not_null
+  criticality: error
+  name: total_fare_is_null
+
+- check:
+    arguments:
+      column: avg_distance
+    function: is_not_null
+  criticality: error
+  name: avg_distance_is_null
+
+- check:
+    arguments:
+      column: avg_fare
+    function: is_not_null
+  criticality: error
+  name: avg_fare_is_null
+
+- check:
+    arguments:
+      column: avg_speed
+    function: is_not_null
+  criticality: error
+  name: avg_speed_is_null
