@@ -32,5 +32,3 @@ def silver_nyc_taxi_trips():
     transformed_df = silver_pipeline(df)
     cleaned_df = dq_engine.apply_checks_by_metadata(transformed_df, CHECKS)
     return cleaned_df
-
-

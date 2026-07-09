@@ -6,7 +6,6 @@ from databricks.sdk import WorkspaceClient
 from databricks.labs.dqx.engine import DQEngine
 
 from src.pipeline.utils.spark_session import SPARK as spark
-from src.pipeline.utils.rules_module import get_rules_by_names
 from src.pipeline.gold.gold_pipelines import gold_pipeline
 
 
@@ -16,7 +15,7 @@ SILVER_SCHEMA_NAME = spark.conf.get("silver_schema")
 dq_engine = DQEngine(WorkspaceClient())
 CHECKS = dq_engine.load_checks(
     config=FileChecksStorageConfig(
-        location=f"../checks/day_of_week_metrics_checks.yml"
+        location="../checks/day_of_week_metrics_checks.yml"
     )
 )
 

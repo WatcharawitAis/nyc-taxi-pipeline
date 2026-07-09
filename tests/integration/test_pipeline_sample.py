@@ -78,7 +78,7 @@ class TestSilverToGoldIntegration:
     """Test silver to gold layer with real tables"""
 
     def test_full_gold_aggregation_with_real_tables(self, spark, setup_test_tables, 
-                                                    sample_silver_data):
+        sample_silver_data):
         """Test complete gold aggregation with real Delta tables"""
         silver_df = sample_silver_data
         silver_df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
