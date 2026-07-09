@@ -2,11 +2,10 @@
 
 from pyspark import pipelines as dp
 from databricks.sdk import WorkspaceClient
-from databricks.labs.dqx.config import FileChecksStorageConfig, InputConfig, OutputConfig
+from databricks.labs.dqx.config import FileChecksStorageConfig
 from databricks.labs.dqx.engine import DQEngine
 
 from src.pipeline.utils.spark_session import SPARK as spark
-from src.pipeline.utils.rules_module import get_rules_by_names
 from src.pipeline.silver.silver_pipelines import silver_pipeline
 
 
@@ -31,9 +30,7 @@ def silver_nyc_taxi_trips():
     """
     df = dp.read_stream(f"{BRONZE_SCHEMA_NAME}.bronze_nyc_taxi_trips")
     transformed_df = silver_pipeline(df)
-    
     cleaned_df = dq_engine.apply_checks_by_metadata(transformed_df, CHECKS)
-
     return cleaned_df
 
 

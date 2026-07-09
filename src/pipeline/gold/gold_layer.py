@@ -1,7 +1,7 @@
 """Pipeline for gold layer"""
 
 from pyspark import pipelines as dp
-from databricks.labs.dqx.config import FileChecksStorageConfig, InputConfig, OutputConfig
+from databricks.labs.dqx.config import FileChecksStorageConfig
 from databricks.sdk import WorkspaceClient
 from databricks.labs.dqx.engine import DQEngine
 
@@ -35,4 +35,4 @@ def day_of_week_metrics():
 
     cleaned_df = dq_engine.apply_checks_by_metadata(transformed_df, CHECKS)
     valid_df = cleaned_df.drop("_errors", "_warnings")
-    return cleaned_df
+    return valid_df

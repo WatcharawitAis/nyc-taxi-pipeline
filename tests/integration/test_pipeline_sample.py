@@ -21,7 +21,7 @@ GOLD_TABLE = f"{TEST_CATALOG}.{TEST_SCHEMA}.gold_taxi_daily"
 @pytest.fixture
 def setup_test_tables(spark):
     """Create test schema and cleanup before/after tests"""
-    
+
     # Setup: Create schema
     spark.sql(f"CREATE CATALOG IF NOT EXISTS {TEST_CATALOG}")
     spark.sql(f"CREATE SCHEMA IF NOT EXISTS {TEST_CATALOG}.{TEST_SCHEMA}")
@@ -77,7 +77,8 @@ class TestBronzeToSilverIntegration:
 class TestSilverToGoldIntegration:
     """Test silver to gold layer with real tables"""
 
-    def test_full_gold_aggregation_with_real_tables(self, spark, setup_test_tables, sample_silver_data):
+    def test_full_gold_aggregation_with_real_tables(self, spark, setup_test_tables, 
+                                                    sample_silver_data):
         """Test complete gold aggregation with real Delta tables"""
         silver_df = sample_silver_data
         silver_df.write.mode("overwrite").saveAsTable(SILVER_TABLE)
