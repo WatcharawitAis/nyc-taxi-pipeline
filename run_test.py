@@ -15,4 +15,5 @@ if __name__ == "__main__":
         "--cov=src",
         "--cov-report=xml",
     ])
-    sys.exit(exit_code)
+    if exit_code != 0:
+        raise Exception(f"Pytest failed with exit code {exit_code}")
