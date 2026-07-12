@@ -15,3 +15,4 @@ if __name__ == "__main__":
         "--cov=src",
         "--cov-report=xml",
     ])
+    sys.exit(exit_code)
