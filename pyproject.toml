@@ -10,17 +10,25 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"] 
 
-[tool.pylint.main]
-ignore-paths = ["explorations/"]
-
-[tool.pylint.messages_control]
-disable = [
-    "import-error",             # E0401 - PySpark/Databricks not resolvable statically
-    "no-member",                # E1101 - DLT runtime APIs not resolvable statically
-    "redefined-outer-name",     # W0621 - pytest fixture pattern
-    "unused-argument",          # R0903 - pytest pattern
-    "too-few-public-methods",
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".github",
+    "explorations",
+    "resources",
 ]
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
 
 [tool.pytest.ini_options]
 # Test discovery patterns

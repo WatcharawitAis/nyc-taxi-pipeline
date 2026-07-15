@@ -8,19 +8,15 @@ from databricks.labs.dqx.engine import DQEngine
 from src.pipeline.utils.spark_session import SPARK as spark
 from src.pipeline.gold.gold_pipelines import gold_pipeline
 
-
+CATALOG = spark.conf.get("catalog")
 GOLD_SCHEMA_NAME = spark.conf.get("gold_schema")
 SILVER_SCHEMA_NAME = spark.conf.get("silver_schema")
 
-dq_engine = DQEngine(WorkspaceClient())
-CHECKS = dq_engine.load_checks(
-    config=FileChecksStorageConfig(
-        location="../checks/day_of_week_metrics_checks.yml"
-    )
-)
+DQ_ENGINE = DQEngine(WorkspaceClient())
+
 
 @dp.table(
-    name=f"{GOLD_SCHEMA_NAME}.day_of_week_metrics",
+    name=f"{CATALOG}.{GOLD_SCHEMA_NAME}.day_of_week_metrics",
     comment="Daily aggregated metrics for the number of rides, "
     "average distance, average fare, and average speed for each day of the week.",
 )
@@ -31,7 +27,12 @@ def day_of_week_metrics():
     """
     df = dp.read(f"{SILVER_SCHEMA_NAME}.silver_nyc_taxi_trips")
     transformed_df = gold_pipeline(df)
+    checks = DQ_ENGINE.load_checks(
+        config=FileChecksStorageConfig(
+            location="../checks/day_of_week_metrics_checks.yml"
+        )
+    )
 
-    cleaned_df = dq_engine.apply_checks_by_metadata(transformed_df, CHECKS)
+    cleaned_df = DQ_ENGINE.apply_checks_by_metadata(transformed_df, checks)
     valid_df = cleaned_df.drop("_errors", "_warnings")
     return valid_df

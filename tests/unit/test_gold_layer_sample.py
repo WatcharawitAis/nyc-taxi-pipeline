@@ -19,7 +19,6 @@ from src.pipeline.utils.aggregations import (
     round_metric_columns,
     sort_by_day_of_week,
 )
-from tests.conftest import spark  
 
 class TestConvertDayNumberToName:
     """Test day number to name conversion"""
