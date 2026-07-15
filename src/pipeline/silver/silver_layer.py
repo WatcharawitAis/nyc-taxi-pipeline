@@ -1,38 +1,26 @@
 """Pipeline for silver layer"""
 
-import logging
 from importlib.resources import files
 
-from databricks.labs.dqx.config import FileChecksStorageConfig
-from databricks.labs.dqx.engine import DQEngine
-from databricks.sdk import WorkspaceClient
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
+from databricks.sdk import WorkspaceClient
+from databricks.labs.dqx.config import FileChecksStorageConfig
+from databricks.labs.dqx.engine import DQEngine
 
+from src.pipeline.utils.spark_session import SPARK as spark, get_required_conf
 from src.pipeline.silver.silver_pipelines import silver_pipeline
-from src.pipeline.utils.spark_session import SPARK as spark
-from src.pipeline.utils.spark_session import get_required_conf
 
-logger = logging.getLogger(__name__)
 
 CATALOG: str = get_required_conf("catalog")
 SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
 BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema")
 
-# Resolves correctly whether this code runs from the raw source tree (how
-# the Lakeflow pipeline itself runs, via a `library: file:` reference) or
-# from the installed wheel (how the test job runs it) - unlike a
-# Path(__file__).resolve().parents[N] approach, this doesn't break if this
-# file's depth relative to the package root ever changes.
 CHECKS_FILE = files("src").joinpath("checks", "silver_yellow_tripdata_checks.yml")
 if not CHECKS_FILE.is_file():
     raise FileNotFoundError(
         f"DQX checks file not found at {CHECKS_FILE}. Expected it to ship "
-        "alongside the pipeline source under src/checks/ - check the bundle "
-        "deploy actually uploaded it."
     )
-
-logger.info("Silver layer configured: catalog=%s checks_file=%s", CATALOG, CHECKS_FILE)
 
 DQ_ENGINE = DQEngine(WorkspaceClient())
 
@@ -51,12 +39,7 @@ DQ_ENGINE = DQEngine(WorkspaceClient())
 def silver_yellow_tripdata() -> DataFrame:
     """Transforms bronze_yellow_tripdata and annotates every row with DQX
     check results (_errors/_warnings columns)."""
-    # bronze_yellow_tripdata gets its _ingested_at mocked via a one-off UPDATE
-    # (see explorations/mock_historical_timeline.py). dp.read_stream() can't
-    # take extra options, so this uses spark.readStream directly with
-    # skipChangeCommits: without it, that UPDATE trips
-    # DELTA_SOURCE_TABLE_IGNORE_CHANGES on the next pipeline run and
-    # reprocesses everything with current_timestamp(), wiping the mock.
+
     df = spark.readStream.option("skipChangeCommits", "true").table(
         f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata"
     )
