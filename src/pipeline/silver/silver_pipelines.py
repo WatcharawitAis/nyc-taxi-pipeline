@@ -5,18 +5,8 @@ from src.pipeline.utils.transformations import extract_time_features
 
 def silver_pipeline(df):
     """Silver Pipeline Logic"""
-    # df = validate_datetime_columns(df)
-    # df = df.withColumns(
-    #     {
-    #         "pickup_zip": clean_and_validate_zip("pickup_zip"),
-    #         "dropoff_zip": clean_and_validate_zip("dropoff_zip"),
-    #     }
-    # )
     df = calculate_trip_duration(df)
     df = calculate_avg_speed(df)
     df = extract_time_features(df)
     df = df.withColumn("_processed_at", current_timestamp())
-    # clean_df = df.select(SILVER_COLUMNS)
-    
-    # clean_df = apply_data_quality_filters(clean_df)
     return df

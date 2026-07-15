@@ -12,6 +12,7 @@ resources:
         bronze_schema: ${var.bronze_schema}
         silver_schema: ${var.silver_schema}
         gold_schema: ${var.gold_schema}
+        catalog: ${var.catalog}
   
       libraries:
         - file:

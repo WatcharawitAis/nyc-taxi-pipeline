@@ -1,25 +1,15 @@
 name: CI/CD Pipeline
-# =============================================================================
-# NYC TAXI PIPELINE - CI/CD WORKFLOW
-# Calls reusable workflow from data-platform-devops repository
-# =============================================================================
+
 
 on:
-  # Trigger on PR to main branches
   pull_request:
     branches: [main, dev, staging]
-  
-  # Trigger on push to main branches
   push:
     branches: [main, dev, staging]
   
-  # # Allow manual trigger
-  # workflow_dispatch:
+  
 
 jobs:
-  # =============================================================================
-  # Development Environment
-  # =============================================================================
   deploy-dev:
     name: CI/CD for Development
     if: github.ref == 'refs/heads/dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev')
@@ -31,9 +21,6 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
       DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
 
-  # =============================================================================
-  # Staging Environment
-  # =============================================================================
   deploy-staging:
     name: CI/CD for Staging
     if: github.ref == 'refs/heads/staging' || (github.event_name == 'pull_request' && github.base_ref == 'staging')
@@ -45,9 +32,6 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}
       DATABRICKS_CLUSTER_ID: ${{ secrets.DATABRICKS_CLUSTER_ID }}
 
-  # =============================================================================
-  # Production Environment
-  # =============================================================================
   deploy-prod:
     name: CI/CD for Production
     if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
