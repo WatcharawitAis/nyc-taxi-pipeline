@@ -23,7 +23,15 @@ variables:
   gold_schema:
     description: Gold layer schema
     default: gold
-  
+
+  landing_schema:
+    description: Unity Catalog schema containing the real NYC TLC landing volume
+    default: landing
+
+  landing_volume:
+    description: Unity Catalog Volume name where real NYC TLC monthly files land
+    default: nyc-yellow-taxi-files
+
   warehouse_id:
     description: SQL Warehouse ID for jobs
     default: ""
@@ -51,8 +59,8 @@ targets:
   
   # Staging target
   staging:
-    mode: development
-    
+    mode: production
+
     variables:
       catalog: biap_staging
       bronze_schema: bronze

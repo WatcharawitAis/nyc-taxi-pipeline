@@ -1,8 +1,10 @@
 """This is an entry point for pytest"""
 
-import sys
 import os
+import sys
+
 import pytest
+
 # Disables Python from creating .pyc bytecode cache files (__pycache__).
 sys.dont_write_bytecode = True
 

@@ -13,6 +13,8 @@ resources:
         silver_schema: ${var.silver_schema}
         gold_schema: ${var.gold_schema}
         catalog: ${var.catalog}
+        landing_schema: ${var.landing_schema}
+        landing_volume: ${var.landing_volume}
   
       libraries:
         - file:

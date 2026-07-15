@@ -1,18 +1,20 @@
 """Data transformation functions for NYC taxi data."""
 
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 
-def extract_time_features(df, datetime_col="tpep_pickup_datetime"):
-    """
-    Extracts hour and day of week from datetime column.
+def extract_time_features(
+    df: DataFrame, datetime_col: str = "tpep_pickup_datetime"
+) -> DataFrame:
+    """Extracts hour and day of week from a datetime column.
 
     Args:
-        df: Input DataFrame
-        datetime_col: Datetime column name
+        df: Input DataFrame containing datetime_col.
+        datetime_col: Name of the source timestamp column.
 
     Returns:
-        DataFrame with pickup_hour and pickup_day_of_week columns
+        DataFrame with pickup_hour and pickup_day_of_week columns added.
     """
     return df.withColumns(
         {
@@ -22,10 +24,17 @@ def extract_time_features(df, datetime_col="tpep_pickup_datetime"):
     )
 
 
-def convert_day_number_to_name(df, day_col="pickup_day_of_week"):
-    """Converts numeric day of week (1-7) to day name.
+def convert_day_number_to_name(
+    df: DataFrame, day_col: str = "pickup_day_of_week"
+) -> DataFrame:
+    """Converts a numeric day of week (1=Sunday ... 7=Saturday) to its day name.
 
-    Spark's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
+    Args:
+        df: Input DataFrame containing day_col.
+        day_col: Name of the numeric day-of-week column.
+
+    Returns:
+        DataFrame with a day_name column added. NULL for any value outside 1-7.
     """
     return df.withColumns(
         {
