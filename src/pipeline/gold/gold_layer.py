@@ -11,8 +11,6 @@ from src.pipeline.gold.gold_pipelines import (
 )
 from src.pipeline.utils.spark_session import get_required_conf
 
-
-
 CATALOG: str = get_required_conf("catalog")
 GOLD_SCHEMA_NAME: str = get_required_conf("gold_schema")
 SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
