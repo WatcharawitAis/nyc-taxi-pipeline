@@ -2,15 +2,15 @@
 
 from importlib.resources import files
 
-from pyspark import pipelines as dp
-from pyspark.sql import DataFrame
-from databricks.sdk import WorkspaceClient
 from databricks.labs.dqx.config import FileChecksStorageConfig
 from databricks.labs.dqx.engine import DQEngine
+from databricks.sdk import WorkspaceClient
+from pyspark import pipelines as dp
+from pyspark.sql import DataFrame
 
-from src.pipeline.utils.spark_session import SPARK as spark, get_required_conf
 from src.pipeline.silver.silver_pipelines import silver_pipeline
-
+from src.pipeline.utils.spark_session import SPARK as spark
+from src.pipeline.utils.spark_session import get_required_conf
 
 CATALOG: str = get_required_conf("catalog")
 SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
