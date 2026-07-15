@@ -23,7 +23,6 @@ from src.pipeline.utils.calculations import (
     calculate_avg_speed,
 )
 from src.pipeline.utils.transformations import extract_time_features
-from tests.conftest import spark
 
 class TestCleanAndValidateZip:
     """Test zip code cleaning and validation"""
