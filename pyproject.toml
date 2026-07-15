@@ -22,7 +22,7 @@ exclude = [
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`) codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "W", "I"]
 ignore = []
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -39,17 +39,12 @@ python_functions = ["test_*"]
 # Test paths
 testpaths = ["tests/"]
 
-# Add src directory to Python path
-pythonpath = ["."]
-
 # Output options
 addopts = "-v --tb=short --strict-markers --color=yes -ra"
 
 # Markers
 markers = [
     "unit: Unit tests - test individual functions in isolation (fast, no external dependencies)",
-    "integration: Integration tests - test end-to-end flows (requires Databricks cluster)",
-    "slow: Tests that take significant time to run",
     "bronze: Tests related to bronze layer",
     "silver: Tests related to silver layer",
     "gold: Tests related to gold layer",

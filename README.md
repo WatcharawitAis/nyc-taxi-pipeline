@@ -1,6 +1,6 @@
 # NYC Taxi Pipeline
 
-A production-ready Databricks data pipeline for processing NYC Taxi Trip data using the medallion architecture (Bronze → Silver → Gold). Built with Spark Declarative Pipelines (SDP) and deployed via Databricks Asset Bundles (DABs).
+A production-ready Databricks data pipeline for processing real NYC TLC Yellow Taxi trip data using the medallion architecture (Bronze → Silver → Gold). Built with Spark Declarative Pipelines (SDP) and deployed via Databricks Asset Bundles (DABs).
 
 ## 📁 Project Structure
 
@@ -9,29 +9,29 @@ nyc-taxi-pipeline/
 ├── src/
 │   └── pipeline/
 │       ├── bronze/
-│       │   ├── bronze_layer.py       # Raw data ingestion
-│       │   └── bronze_pipelines.py   # Bronze table definitions
+│       │   ├── bronze_layer.py       # Auto Loader ingestion from a Volume
+│       │   └── bronze_pipelines.py   # Bronze transform logic
 │       ├── silver/
-│       │   ├── silver_layer.py       # Data cleaning & validation
-│       │   └── silver_pipelines.py   # Silver table definitions
+│       │   ├── silver_layer.py       # Data cleaning + DQX checks (_errors/_warnings kept)
+│       │   └── silver_pipelines.py   # Silver transform logic
 │       ├── gold/
 │       │   ├── gold_layer.py         # Business aggregations
-│       │   └── gold_pipelines.py     # Gold table definitions
+│       │   └── gold_pipelines.py     # Gold aggregation logic
 │       ├── utils/
-│       │   ├── validations.py        # Data validation functions
 │       │   ├── calculations.py       # Metric calculations
 │       │   ├── transformations.py    # Data transformations
-│       │   ├── aggregations.py       # Aggregation functions
-│       │   ├── constraints.py        # Data quality constraints
 │       │   └── spark_session.py      # Spark session utilities
 │       └── pipeline.py               # Main entry point (imports all layers)
 ├── tests/
-│   ├── unit/
-│   │   ├── test_silver_layer_sample.py   # Silver layer unit tests
-│   │   └── test_gold_layer_sample.py     # Gold layer unit tests
-│   ├── integration/
-│   │   └── test_pipeline_sample.py       # End-to-end integration tests
+│   ├── unit/                             # Pure function tests, one file per source module
+│   │   ├── test_calculations.py
+│   │   ├── test_transformations.py
+│   │   ├── test_bronze_pipelines.py
+│   │   ├── test_silver_pipelines.py
+│   │   └── test_gold_pipelines.py
 │   └── conftest.py                       # Pytest fixtures & test configuration
+├── explorations/
+│   └── mock_historical_timeline.py       # One-off script to backfill demo timestamps
 ├── resources/
 │   ├── nyc_taxi_pipeline.pipeline.yml    # Pipeline resource definition
 │   └── test.job.yml                      # Job resource definition
@@ -51,6 +51,8 @@ nyc-taxi-pipeline/
 * Databricks workspace with Unity Catalog enabled
 * Databricks CLI installed (`pip install databricks-cli`)
 * Python 3.10 or higher
+* NYC TLC Yellow Taxi monthly parquet files already landed in a Unity Catalog
+  Volume (see [Data Source](#-data-source) below)
 
 ### Deploy Pipeline
 
@@ -64,6 +66,21 @@ databricks bundle deploy --target dev
 # 3. Run the pipeline
 databricks bundle run nyc_taxi_pipeline --target dev
 ```
+
+## 📥 Data Source
+
+Real, public NYC TLC Yellow Taxi monthly files
+(`yellow_tripdata_YYYY-MM.parquet`, e.g. from
+`https://d37ci6vzurychx.cloudfront.net/trip-data/`) are expected to already be
+landed in a Unity Catalog Volume at
+`/Volumes/{catalog}/{landing_schema}/{landing_volume}/{year}/yellow_tripdata_{year}-{month}.parquet`
+(configurable via the `landing_schema`/`landing_volume` bundle variables in
+`databricks.yml`, default `landing` / `nyc-yellow-taxi-files`).
+
+> ⚠️ If that Volume ever contains multiple years' worth of files, `bronze_layer.py`
+> loads the Volume's root path recursively via Auto Loader — point
+> `landing_volume`/`landing_schema` at a location scoped to what you actually
+> want ingested, or you'll stream in every year on disk.
 
 ## 🎯 Environment Targets
 
@@ -83,7 +100,7 @@ Pipeline Development Mode: true
 Target: staging
 Catalog: biap_staging
 Schemas: bronze, silver, gold
-Mode: development
+Mode: production
 Pipeline Development Mode: true
 ```
 
@@ -99,80 +116,103 @@ Pipeline Development Mode: false
 ## 📊 Pipeline Architecture
 
 ### Bronze Layer
-**Purpose:** Raw data ingestion from source without transformations
+**Purpose:** Incremental ingestion of real NYC TLC Yellow Taxi files, no transformations
 
 **Location:** `src/pipeline/bronze/`
-- Ingests raw NYC taxi trip data
-- Preserves original data format (ISO 8601 timestamps)
-- No data quality filters applied
+- Auto Loader (`cloudFiles`) incrementally picks up new `yellow_tripdata_YYYY-MM.parquet`
+  files from the landing Volume
+- Adds `trip_year`/`trip_month` (parsed from the file name) and an `_ingested_at`
+  lineage timestamp
+- Real TLC schema (`PULocationID`/`DOLocationID`, `VendorID`, etc.) - no transformations applied
 
-**Output:** `{catalog}.bronze.nyc_taxi_trips_raw`
+**Output:** `{catalog}.bronze.bronze_yellow_tripdata`
 
 ### Silver Layer
-**Purpose:** Data cleaning, validation, and feature engineering
+**Purpose:** Data cleaning, feature engineering, and data quality enforcement
 
 **Location:** `src/pipeline/silver/`
 
 **Transformations:**
-* Clean and validate ZIP codes
-* Parse and validate datetime columns (ISO 8601 format)
 * Calculate trip duration (minutes)
 * Calculate average speed (mph)
 * Extract time features (hour, day of week)
-* Apply data quality filters (remove invalid records)
+* Apply DQX checks (`src/checks/silver_yellow_tripdata_checks.yml`), including
+  business rules (fare/distance/duration > 0, dropoff after pickup) via
+  `sql_expression` checks - every row keeps its `_errors`/`_warnings` result
+  columns rather than being silently dropped or split into a separate table
 
 **Utilities:**
-- `validations.py` - Data validation functions
 - `calculations.py` - Metric calculation functions
 - `transformations.py` - Data transformation functions
 
-**Output:** `{catalog}.silver.nyc_taxi_trips_cleaned`
+**Output:**
+- `{catalog}.silver.silver_yellow_tripdata` - every transformed row, with
+  `_errors`/`_warnings` columns from DQX (this is the "Flag Violations"
+  pattern - see [Databricks: Data Quality Management](https://www.databricks.com/discover/pages/data-quality-management#data-quarantine) -
+  rather than a physical valid/quarantine table split, so the DQX check pass
+  runs once, not once per downstream table)
+- `{catalog}.silver.verified_trips` - a view over `silver_yellow_tripdata`
+  filtered to rows with no `_errors`/`_warnings`, with those columns dropped.
+  No extra storage; use this instead of querying `silver_yellow_tripdata`
+  directly if you want clean data without knowing the filtering convention.
+- `{catalog}.silver.quarantined_trips` - a view over `silver_yellow_tripdata`
+  filtered to rows with at least one `_errors`/`_warnings` entry.
 
 ### Gold Layer
 **Purpose:** Business-ready aggregations for analytics and reporting
 
 **Location:** `src/pipeline/gold/`
 
-**Aggregations:**
-* Group rides by day of week
-* Calculate total rides, total fare
-* Calculate average distance, fare, and speed
-* Convert day numbers to readable names (Sunday, Monday, etc.)
-* Round metrics for readability
+- **`monthly_trip_metrics`** - aggregated by `trip_year`/`trip_month`: rides, fare,
+  distance, speed, tips. The timeline view for a quality/trend dashboard.
+- **`pickup_zone_metrics`** - aggregated by `PULocationID`: ride demand by pickup zone.
+- **`hourly_demand_heatmap`** - aggregated by pickup day-of-week x hour: a 7x24
+  ride-demand grid with readable day names.
+- **`data_quality_trend`** - bronze volume vs. silver valid/quarantine counts
+  (derived from `_errors`/`_warnings` on `silver_yellow_tripdata`) by month,
+  with a `quarantine_rate_pct`.
 
 **Utilities:**
-- `aggregations.py` - Aggregation functions
-- `constraints.py` - Data quality expectations
+- `gold_pipelines.py` - Aggregation functions for each table above
 
-**Output:** `{catalog}.gold.nyc_taxi_daily_stats`
+**Output:** `{catalog}.gold.monthly_trip_metrics`, `{catalog}.gold.pickup_zone_metrics`,
+`{catalog}.gold.hourly_demand_heatmap`, `{catalog}.gold.data_quality_trend`
+
+## 📅 Mocking a Historical Timeline for Demos
+
+Since all months are typically backfilled in one run, `current_timestamp()` stamps
+every row with today's date regardless of which historical month it's from - not
+useful for a quality dashboard that wants to show a timeline.
+`explorations/mock_historical_timeline.py` is a one-off, run-it-yourself script
+(deliberately **not** part of the pipeline) that backfills believable values after
+the fact: `_ingested_at` becomes that row's trip month's last day plus a fixed lag
+(default 5 days), and `_processed_at` becomes a further fixed lag (default 1 day)
+after that.
+
+> ⚠️ Run this only after the pipeline has finished backfilling, and don't
+> re-run `nyc_taxi_pipeline` afterward without a full refresh: `silver_yellow_tripdata`
+> reads `bronze_yellow_tripdata` as an append-only stream (with `skipChangeCommits`
+> to tolerate the mock `UPDATE`), but re-running the pipeline can still overwrite
+> `_processed_at` back to `current_timestamp()` unless the checkpoint has already
+> passed that update.
 
 ## 🧪 Testing
 
 ### Test Structure
 
-The project includes comprehensive testing organized into two categories:
-
-**Unit Tests** (`tests/unit/`)
-- Test individual transformation functions in isolation
-- Verify calculations, validations, and data transformations
-- Fast execution with minimal dependencies
-
-**Integration Tests** (`tests/integration/`)
-- Test end-to-end pipeline execution
-- Verify data flows through all layers
-- Validate final output schema and data quality
+**Unit Tests** (`tests/unit/`) - one file per source module:
+- `test_calculations.py`, `test_transformations.py` - the low-level utility
+  functions, in isolation
+- `test_bronze_pipelines.py`, `test_silver_pipelines.py`, `test_gold_pipelines.py` -
+  the composed `*_pipeline()` functions that wire those utilities together
+- Pure DataFrame-in/DataFrame-out functions; no Databricks workspace required
+  beyond a Spark session
 
 ### Running Tests
 
 ```bash
 # Run all tests
 pytest tests/ -v
-
-# Run only unit tests
-pytest tests/unit/ -v
-
-# Run only integration tests
-pytest tests/integration/ -v
 
 # Run with coverage report
 pytest tests/ --cov=src.pipeline --cov-report=html
@@ -185,28 +225,22 @@ pytest tests/ -k "silver" -v
 
 **Pytest Configuration:** `pyproject.toml`
 - Test discovery patterns
-- Coverage settings
 - Pytest options
 
-**Test Fixtures:** `tests/conftest.py`
-- Spark session setup for testing
-- Shared test data and utilities
+**Test Fixtures:**
+- `tests/conftest.py` - Spark session setup, shared sample data
 
 ## 🔄 CI/CD Pipeline
 
-The project uses GitHub Actions for automated testing and deployment.
+The project uses GitHub Actions for automated deployment, delegating to a shared
+reusable workflow (`WatcharawitAis/data-platform-devops`). That workflow's test/lint/
+validate stages are defined outside this repo, so consult it directly for the exact
+steps it runs.
 
 ### Workflow Triggers
 
 * Push to `main`, `dev`, or `staging` branches
 * Pull requests to these branches
-
-### Pipeline Stages
-
-1. **Test** - Run pytest with coverage reporting
-2. **Lint** - Code quality checks (Black, Flake8, isort, mypy)
-3. **Validate** - Validate bundle configuration for target environment
-4. **Deploy** - Automatically deploy to appropriate environment based on branch
 
 ### Required GitHub Secrets
 
@@ -244,11 +278,12 @@ cd nyc-taxi-pipeline
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install dependencies (includes pytest, databricks-connect, databricks-sdk, dqx)
 pip install -r requirements.txt
 
-# Install development tools
-pip install pytest pytest-cov black flake8 isort mypy
+# Install this project itself in editable mode, so `import src.pipeline...`
+# resolves in tests without rebuilding a wheel on every change
+pip install -e .
 ```
 
 ### 2. Making Changes
@@ -266,13 +301,8 @@ git checkout -b feature/your-feature-name
 # Run tests locally
 pytest tests/ -v
 
-# Format code
-black src/ tests/
-isort src/ tests/
-
-# Check code quality
-flake8 src/ tests/
-mypy src/
+# Lint (and auto-fix) with ruff
+ruff check src/ tests/ --fix
 ```
 
 ### 3. Testing Locally
@@ -305,8 +335,8 @@ git push origin feature/your-feature-name
 ## 📝 Contributing Guidelines
 
 1. **Branch from `dev`** - All feature branches should be created from the `dev` branch
-2. **Write tests** - Add unit tests for new functions and integration tests for new features
-3. **Follow code style** - Use Black for formatting, follow PEP 8 guidelines
+2. **Write tests** - Add unit tests for new functions
+3. **Follow code style** - Follow PEP 8 guidelines; run `ruff check` before pushing
 4. **Test locally** - Run all tests and ensure they pass before pushing
 5. **Update documentation** - Update README or code comments if adding new features
 6. **Small PRs** - Keep pull requests focused on a single feature or fix
@@ -314,16 +344,12 @@ git push origin feature/your-feature-name
 
 ## ✅ Quality Gates
 
-All checks must pass before deployment:
-
-* ✅ **All pytest tests passing** - Unit and integration tests
-* ✅ **Code formatting** - Black code formatter applied
-* ✅ **Linting** - Flake8 checks passing
-* ✅ **Import sorting** - isort applied correctly
-* ✅ **Type checking** - mypy static type analysis passing
+* ✅ **All pytest tests passing** - Unit tests
+* ✅ **Linting** - `ruff check` passing
 * ✅ **Bundle validation** - Databricks bundle validates successfully
 
-The CI/CD pipeline automatically enforces these quality gates. Failed checks will block merging and deployment.
+Additional gates enforced by the shared CI/CD workflow are defined outside this
+repo (see `.github/workflows/ci-cd.yml`).
 
 ## 📚 Additional Resources
 
@@ -337,21 +363,18 @@ The CI/CD pipeline automatically enforces these quality gates. Failed checks wil
 * [PySpark Testing Guide](https://spark.apache.org/docs/latest/api/python/getting_started/testing_pyspark.html)
 
 ### Code Quality Tools
-* [Black Code Formatter](https://black.readthedocs.io/)
-* [Flake8 Linter](https://flake8.pycqa.org/)
-* [isort Import Sorter](https://pycqa.github.io/isort/)
-* [mypy Type Checker](https://mypy.readthedocs.io/)
+* [Ruff Linter](https://docs.astral.sh/ruff/)
 
 ## 🏆 Project Features
 
 * **Medallion Architecture** - Bronze → Silver → Gold data layers
 * **Spark Declarative Pipelines** - Modern, declarative pipeline framework
 * **Serverless Compute** - Automatic scaling, no cluster management
-* **Comprehensive Testing** - Unit and integration test coverage
+* **Unit Testing** - pytest coverage for utility and pipeline functions
 * **CI/CD Automation** - GitHub Actions with multi-environment deployment
 * **Infrastructure as Code** - Complete deployment automation with DABs
 * **Multi-Environment Support** - Dev, Staging, and Production configurations
-* **Data Quality** - Built-in validation, constraints, and quality checks
+* **Data Quality** - DQX checks with per-row `_errors`/`_warnings` results
 
 ## 📄 License
 

@@ -2,18 +2,20 @@ resources:
   pipelines:
     nyc_taxi_pipeline:
       name: NYC Taxi Data Pipeline - ${bundle.target}
-      
+
       # Unity Catalog configuration
       catalog: ${var.catalog}
-      target: ${var.bronze_schema}  # Default output schema is bronze
-      
+      target: ${var.bronze_schema}
+
       # Configuration parameters accessible in pipeline code via spark.conf
       configuration:
         bronze_schema: ${var.bronze_schema}
         silver_schema: ${var.silver_schema}
         gold_schema: ${var.gold_schema}
         catalog: ${var.catalog}
-  
+        landing_schema: ${var.landing_schema}
+        landing_volume: ${var.landing_volume}
+
       libraries:
         - file:
             path: ../src/pipeline/pipeline.py
@@ -22,11 +24,11 @@ resources:
         dependencies:
           - ../dist/*.whl
           - databricks-labs-dqx==0.8.0
-      
+
       # Compute configuration
       serverless: true
       channel: current
-      
+
       # Pipeline mode
       continuous: false
       development: ${var.pipeline_development}
