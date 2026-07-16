@@ -1,5 +1,4 @@
 import urllib.request
-
 import dbutils
 
 def download_taxi_month(year: int, month: int) -> str:

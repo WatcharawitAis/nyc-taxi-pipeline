@@ -24,23 +24,16 @@ if not CHECKS_FILE.is_file():
 
 DQ_ENGINE = DQEngine(WorkspaceClient())
 
-
 @dp.table(
     name=f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata",
-    comment="Cleaned real NYC TLC trip data with DQX check results kept as "
-    "_errors/_warnings columns (silver_yellow_tripdata_checks.yml - "
-    "PULocationID/DOLocationID based, not zip). Consumers must filter on "
-    "_errors IS NULL (and _warnings IS NULL) to get valid-only rows - see "
-    "gold_layer.py.",
-    # tpep_pickup_datetime/tpep_dropoff_datetime are TIMESTAMP_NTZ in the real
-    # TLC files; Delta requires this feature explicitly enabled on the table.
+    comment="Cleaned real NYC TLC trip data with DQX check",
     table_properties={"delta.feature.timestampNtz": "supported"},
 )
 def silver_yellow_tripdata() -> DataFrame:
     """Transforms bronze_yellow_tripdata and annotates every row with DQX
     check results (_errors/_warnings columns)."""
 
-    df = spark.readStream.option("skipChangeCommits", "true").table(
+    df = spark.readStream.table(
         f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata"
     )
     transformed_df = silver_pipeline(df)
@@ -52,10 +45,7 @@ def silver_yellow_tripdata() -> DataFrame:
 
 @dp.temporary_view(
     name="verified_trips",
-    comment="silver_yellow_tripdata rows that passed all DQX checks, with "
-    "_errors/_warnings dropped. A view (no extra storage) so consumers "
-    "always see current data without needing to know the _errors/_warnings "
-    "filtering convention themselves.",
+    comment="silver_yellow_tripdata rows that passed all DQX checks "
 )
 def verified_trips() -> DataFrame:
     """silver_yellow_tripdata filtered to rows with no DQX errors/warnings"""
@@ -63,7 +53,6 @@ def verified_trips() -> DataFrame:
     return df.where(df["_errors"].isNull() & df["_warnings"].isNull()).drop(
         "_errors", "_warnings"
     )
-
 
 @dp.temporary_view(
     name="quarantined_trips",

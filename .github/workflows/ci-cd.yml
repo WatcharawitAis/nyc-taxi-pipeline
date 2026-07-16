@@ -1,37 +1,32 @@
 name: CI/CD Pipeline
-
-
 on:
   pull_request:
     branches: [main, dev, staging]
   push:
     branches: [main, dev, staging]
-
 jobs:
   deploy-dev:
     name: CI/CD for Development
     if: github.ref == 'refs/heads/dev' || (github.event_name == 'pull_request' && github.base_ref == 'dev')
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@8931d89a1e6c9dc116148f1cf541dd6d4290665b
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@6377bb532520a6d435b7bcd34001d6f2af21b279
     with:
       target_env: dev
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
-
   deploy-staging:
     name: CI/CD for Staging
     if: github.ref == 'refs/heads/staging' || (github.event_name == 'pull_request' && github.base_ref == 'staging')
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@8931d89a1e6c9dc116148f1cf541dd6d4290665b
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@6377bb532520a6d435b7bcd34001d6f2af21b279
     with:
       target_env: staging
     secrets:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_STAGING_TOKEN }}
-  
   deploy-prod:
     name: CI/CD for Production
     if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main')
-    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@8931d89a1e6c9dc116148f1cf541dd6d4290665b
+    uses: WatcharawitAis/data-platform-devops/.github/workflows/ci_cd_template.yml@6377bb532520a6d435b7bcd34001d6f2af21b279
     with:
       target_env: prod
     secrets:

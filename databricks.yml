@@ -11,31 +11,24 @@ variables:
   catalog:
     description: Unity Catalog name
     default: main
-  
   bronze_schema:
     description: Bronze layer schema
     default: bronze
-  
   silver_schema:
     description: Silver layer schema
     default: silver
-  
   gold_schema:
     description: Gold layer schema
     default: gold
-
   landing_schema:
     description: Unity Catalog schema containing the real NYC TLC landing volume
     default: landing
-
   landing_volume:
     description: Unity Catalog Volume name where real NYC TLC monthly files land
     default: nyc-yellow-taxi-files
-
   warehouse_id:
     description: SQL Warehouse ID for jobs
     default: ""
-  
   pipeline_development:
     description: Enable development mode for pipeline
     default: true
@@ -49,7 +42,6 @@ targets:
   dev:
     default: true
     mode: development
-    
     variables:
       catalog: biap_dev
       bronze_schema: bronze
@@ -60,7 +52,6 @@ targets:
   # Staging target
   staging:
     mode: production
-
     variables:
       catalog: biap_staging
       bronze_schema: bronze
@@ -71,17 +62,14 @@ targets:
   # Production target
   prod:
     mode: production
-    
     workspace:
       root_path: /Workspace/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
-    
     variables:
       catalog: biap_prod
       bronze_schema: bronze
       silver_schema: silver
       gold_schema: gold
       pipeline_development: false
-
     permissions:
       - user_name: watchaaq@ais.co.th
         level: CAN_MANAGE

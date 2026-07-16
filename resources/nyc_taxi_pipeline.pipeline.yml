@@ -27,7 +27,6 @@ resources:
 
       # Compute configuration
       serverless: true
-      channel: current
 
       # Pipeline mode
       continuous: false

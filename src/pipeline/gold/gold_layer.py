@@ -17,8 +17,6 @@ SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
 BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema")
 
 
-
-
 @dp.table(
     name=f"{CATALOG}.{GOLD_SCHEMA_NAME}.monthly_trip_metrics",
     comment="Monthly aggregated metrics (rides, fare, distance, speed, tips) for real "
@@ -30,7 +28,6 @@ def monthly_trip_metrics() -> DataFrame:
     df = dp.read("verified_trips")
     return monthly_trip_metrics_pipeline(df)
 
-
 @dp.table(
     name=f"{CATALOG}.{GOLD_SCHEMA_NAME}.pickup_zone_metrics",
     comment="Aggregated metrics for real NYC TLC trip data by pickup zone (PULocationID) "
@@ -41,7 +38,6 @@ def pickup_zone_metrics() -> DataFrame:
     """Gold Layer: real NYC TLC trip data aggregated by pickup zone"""
     df = dp.read("verified_trips")
     return pickup_zone_metrics_pipeline(df)
-
 
 @dp.table(
     name=f"{CATALOG}.{GOLD_SCHEMA_NAME}.hourly_demand_heatmap",
