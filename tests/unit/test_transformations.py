@@ -2,12 +2,68 @@
 
 from datetime import datetime, timezone
 
+from pyspark.sql import functions as F
 from pyspark.sql.types import StructField, StructType, TimestampType
 
 from src.pipeline.utils.transformations import (
     convert_day_number_to_name,
     extract_time_features,
+    extract_year_month_from_filename,
 )
+
+
+class TestExtractYearMonthFromFilename:
+    """Test year/month extraction from file path"""
+
+    def test_extract_from_valid_filename(self, spark):
+        """Should extract year and month from valid filename pattern"""
+        df = spark.createDataFrame([(1,)], ["id"])
+        df = df.withColumn(
+            "_metadata",
+            F.struct(
+                F.lit(
+                    "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-03.parquet"
+                ).alias("file_path")
+            ),
+        )
+
+        result = extract_year_month_from_filename(df)
+        row = result.collect()[0]
+
+        assert row.trip_year == 2026
+        assert row.trip_month == 3
+
+    def test_different_year_month(self, spark):
+        """Should extract different year/month combinations correctly"""
+        df = spark.createDataFrame([(1,)], ["id"])
+        df = df.withColumn(
+            "_metadata",
+            F.struct(
+                F.lit(
+                    "/some/other/path/yellow_tripdata_2025-12.parquet"
+                ).alias("file_path")
+            ),
+        )
+
+        result = extract_year_month_from_filename(df)
+        row = result.collect()[0]
+
+        assert row.trip_year == 2025
+        assert row.trip_month == 12
+
+    def test_invalid_filename_returns_null(self, spark):
+        """Should return NULL for files that don't match the pattern"""
+        df = spark.createDataFrame([(1,)], ["id"])
+        df = df.withColumn(
+            "_metadata",
+            F.struct(F.lit("/some/invalid/file.parquet").alias("file_path")),
+        )
+
+        result = extract_year_month_from_filename(df)
+        row = result.collect()[0]
+
+        assert row.trip_year is None
+        assert row.trip_month is None
 
 
 class TestExtractTimeFeatures:

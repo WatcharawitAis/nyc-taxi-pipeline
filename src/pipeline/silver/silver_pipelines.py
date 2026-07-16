@@ -4,7 +4,10 @@ from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 from src.pipeline.utils.calculations import calculate_avg_speed, calculate_trip_duration
-from src.pipeline.utils.transformations import extract_time_features
+from src.pipeline.utils.transformations import (
+    extract_time_features,
+    extract_year_month_from_filename,
+)
 
 
 def silver_pipeline(df: DataFrame) -> DataFrame:
@@ -13,13 +16,14 @@ def silver_pipeline(df: DataFrame) -> DataFrame:
     Args:
         df: Bronze DataFrame (bronze_yellow_tripdata schema): must contain
             tpep_pickup_datetime, tpep_dropoff_datetime, trip_distance,
-            fare_amount.
+            fare_amount, and _metadata.file_path for year/month extraction.
 
     Returns:
-        DataFrame with trip_duration_minutes, avg_speed_mph, pickup_hour,
-        pickup_day_of_week, and _processed_at columns added, same row count
-        as the input.
+        DataFrame with trip_year, trip_month, trip_duration_minutes,
+        avg_speed_mph, pickup_hour, pickup_day_of_week, and _processed_at
+        columns added, same row count as the input.
     """
+    df = extract_year_month_from_filename(df)
     df = calculate_trip_duration(df)
     df = calculate_avg_speed(df)
     df = extract_time_features(df)

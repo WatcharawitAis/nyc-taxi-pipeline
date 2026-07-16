@@ -3,6 +3,31 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
+# Regex pattern: matches "yellow_tripdata_YYYY-MM.parquet" anywhere in the file path
+FILENAME_YEAR_MONTH_PATTERN = r"yellow_tripdata_(\d{4})-(\d{2})\.parquet"
+
+
+def extract_year_month_from_filename(df: DataFrame) -> DataFrame:
+    """Extracts trip_year and trip_month from the source file path.
+
+    Args:
+        df: Input DataFrame with _metadata.file_path column (Spark file metadata).
+
+    Returns:
+        DataFrame with trip_year (int) and trip_month (int) columns added.
+        Values are NULL if the filename doesn't match the expected pattern.
+    """
+    file_path = F.col("_metadata.file_path")
+    year = F.regexp_extract(file_path, FILENAME_YEAR_MONTH_PATTERN, 1)
+    month = F.regexp_extract(file_path, FILENAME_YEAR_MONTH_PATTERN, 2)
+
+    return df.withColumns(
+        {
+            "trip_year": F.when(year == "", None).otherwise(year.cast("int")),
+            "trip_month": F.when(month == "", None).otherwise(month.cast("int")),
+        }
+    )
+
 
 def extract_time_features(
     df: DataFrame, datetime_col: str = "tpep_pickup_datetime"
