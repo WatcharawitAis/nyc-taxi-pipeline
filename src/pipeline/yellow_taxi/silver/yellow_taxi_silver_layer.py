@@ -8,7 +8,9 @@ from databricks.sdk import WorkspaceClient
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
 
-from src.pipeline.yellow_taxi.silver.silver_transformations import silver_yellow_taxi_transformation
+from src.pipeline.yellow_taxi.silver.silver_transformations import (
+    yellow_taxi_silver_transformation,
+)
 from src.utils.spark_session import get_required_conf, get_spark_session
 
 SPARK = get_spark_session()
@@ -33,10 +35,10 @@ def silver_yellow_tripdata() -> DataFrame:
     """Transforms bronze_yellow_tripdata and annotates every row with DQX
     check results (_errors/_warnings columns)."""
 
-    df = spark.readStream.table(
+    df = SPARK.readStream.table(
         f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata"
     )
-    transformed_df = silver_yellow_taxi_transformation(df)
+    transformed_df = yellow_taxi_silver_transformation(df)
     checks = DQ_ENGINE.load_checks(
         config=FileChecksStorageConfig(location=str(CHECKS_FILE))
     )
@@ -45,7 +47,11 @@ def silver_yellow_tripdata() -> DataFrame:
 
 @dp.temporary_view(
     name="verified_trips",
-    comment="silver_yellow_tripdata rows that passed all DQX checks "
+    comment="silver_yellow_tripdata rows that passed all DQX checks. Not "
+    "materialized (no extra storage) - only usable within this pipeline. "
+    "gold_pipeline is a separate pipeline, so it re-applies this same filter "
+    "itself (gold_transformations.filter_verified_trips) on silver_yellow_tripdata "
+    "directly instead of reading this view.",
 )
 def verified_trips() -> DataFrame:
     """silver_yellow_tripdata filtered to rows with no DQX errors/warnings"""
@@ -56,7 +62,9 @@ def verified_trips() -> DataFrame:
 
 @dp.temporary_view(
     name="quarantined_trips",
-    comment="silver_yellow_tripdata rows that failed at least one DQX check.",
+    comment="silver_yellow_tripdata rows that failed at least one DQX check. "
+    "Not materialized - query silver_yellow_tripdata's _errors/_warnings "
+    "columns directly from outside this pipeline instead.",
 )
 def quarantined_trips() -> DataFrame:
     """silver_yellow_tripdata filtered to rows with a DQX error or warning"""

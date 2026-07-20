@@ -27,11 +27,28 @@ variables:
     description: Unity Catalog Volume name where real NYC TLC monthly files land
     default: nyc-yellow-taxi-files
   warehouse_id:
-    description: SQL Warehouse ID for jobs
+    description: SQL Warehouse ID for jobs and the data-quality monitoring alert
     default: ""
   pipeline_development:
     description: Enable development mode for pipeline
     default: true
+  alert_email:
+    description: Email recipients for job/pipeline failure alerts. Must be
+      non-empty - the pipeline/job notification APIs reject an `alerts` list
+      paired with zero recipients.
+    type: complex
+    default:
+      - watchaaq@ais.co.th
+  alert_email_primary:
+    description: Single email address subscribed to the data-quality SQL alert (Alerts V2 subscriptions take one recipient object per entry, not a plain list)
+    default: watchaaq@ais.co.th
+  schedule_pause_status:
+    description: Whether the monthly orchestration_job schedule is active
+    default: "PAUSED"
+  quality_gate_threshold_pct:
+    description: Max acceptable DQX quarantine rate (%) on silver_yellow_tripdata
+      before quality_gate_task fails the job and blocks gold_pipeline from running
+    default: "20"
 
 # Include resource files
 include:
@@ -43,20 +60,17 @@ targets:
     mode: development
     variables:
       catalog: biap_dev
-      bronze_schema: bronze
-      silver_schema: silver
-      gold_schema: gold
       pipeline_development: true
+      warehouse_id: 8261d83d59907973
   
   # Staging target
   staging:
     mode: production
+    workspace:
+      root_path: /Workspace/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: biap_staging
-      bronze_schema: bronze
-      silver_schema: silver
-      gold_schema: gold
-      pipeline_development: true
+      pipeline_development: false
   
   # Production target
   prod:
@@ -65,10 +79,11 @@ targets:
       root_path: /Workspace/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: biap_prod
-      bronze_schema: bronze
-      silver_schema: silver
-      gold_schema: gold
       pipeline_development: false
+      alert_email:
+        - watchaaq@ais.co.th
+      alert_email_primary: watchaaq@ais.co.th
+      schedule_pause_status: "UNPAUSED"
     permissions:
       - user_name: watchaaq@ais.co.th
         level: CAN_MANAGE

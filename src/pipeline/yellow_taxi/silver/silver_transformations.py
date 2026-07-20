@@ -10,13 +10,13 @@ from src.utils.transformations import (
 )
 
 
-def silver_yellow_taxi_transformation(df: DataFrame) -> DataFrame:
+def yellow_taxi_silver_transformation(df: DataFrame) -> DataFrame:
     """Silver Pipeline Logic for real TLC data (bronze_yellow_tripdata).
 
     Args:
         df: Bronze DataFrame (bronze_yellow_tripdata schema): must contain
             tpep_pickup_datetime, tpep_dropoff_datetime, trip_distance,
-            fare_amount, and _metadata.file_path for year/month extraction.
+            fare_amount, and _source_file for year/month extraction.
 
     Returns:
         DataFrame with trip_year, trip_month, trip_duration_minutes,

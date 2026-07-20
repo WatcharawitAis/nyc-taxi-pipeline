@@ -3,21 +3,17 @@
 Scans the target volume for existing (year, month) parquet files, computes
 the gap up to the current month, and downloads whatever is missing.
 """
-print("start")
 import logging
 import os
 import random
 import time
 from datetime import datetime
-from typing import Optional
 
 import requests
 from dateutil.relativedelta import relativedelta
 from pyspark.dbutils import DBUtils
-from pyspark.sql import SparkSession
 
 from src.utils.spark_session import get_required_conf, get_spark_session
-
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -99,8 +95,19 @@ def compute_missing_year_months(
     return missing
 
 
-def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: int) -> bool:
-    """Download a single year-month parquet file into the volume. Returns True on success or if already present."""
+DOWNLOADED = "downloaded"
+ALREADY_EXISTS = "already_exists"
+NOT_PUBLISHED = "not_published"
+FAILED = "failed"
+
+
+def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: int) -> str:
+    """Download a single year-month parquet file into the volume.
+
+    Returns one of DOWNLOADED, ALREADY_EXISTS, NOT_PUBLISHED (soft skip -
+    file simply isn't published yet, expected for recent months), or FAILED
+    (a real error - timeout, unexpected HTTP status, network exception).
+    """
     dest_dir = f"{volume_base_path}/{year}"
     dest_path = f"{dest_dir}/yellow_tripdata_{year}-{month:02d}.parquet"
 
@@ -108,7 +115,7 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
         existing = dbutils.fs.ls(dest_path)
         if existing and existing[0].size > 0:
             logger.info("⊙ %s-%02d already exists, skipping", year, month)
-            return True
+            return ALREADY_EXISTS
     except Exception:
         pass
 
@@ -119,10 +126,10 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
             # CloudFront returns 403 (not 404) for objects that don't exist yet
             # when the origin bucket disallows ListBucket -- treat both as "not published yet"
             logger.warning("✗ %s-%02d not available yet (HTTP %s), skipping", year, month, head.status_code)
-            return False
+            return NOT_PUBLISHED
         if head.status_code != 200:
             logger.error("✗ %s-%02d HTTP %s", year, month, head.status_code)
-            return False
+            return FAILED
 
         response = requests.get(url, timeout=300)
         os.makedirs(dest_dir, exist_ok=True)
@@ -130,14 +137,14 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
             f.write(response.content)
 
         logger.info("✓ %s-%02d downloaded (%s bytes)", year, month, f"{os.path.getsize(dest_path):,}")
-        return True
+        return DOWNLOADED
 
     except requests.exceptions.Timeout:
         logger.error("✗ %s-%02d timed out", year, month)
-        return False
+        return FAILED
     except Exception as e:
         logger.error("✗ %s-%02d failed: %s", year, month, e)
-        return False
+        return FAILED
 
 
 def main() -> None:
@@ -153,15 +160,28 @@ def main() -> None:
         return
     logger.info("Missing %d month(s): %s-%02d to %s-%02d", len(missing), *missing[0], *missing[-1])
 
-    success, failed = 0, 0
+    success, not_published, failed = 0, 0, 0
     for year, month in missing:
         time.sleep(random.uniform(3, 15))
-        if download_month(dbutils, VOLUME_BASE_PATH, year, month):
+        result = download_month(dbutils, VOLUME_BASE_PATH, year, month)
+        if result in (DOWNLOADED, ALREADY_EXISTS):
             success += 1
+        elif result == NOT_PUBLISHED:
+            not_published += 1
         else:
             failed += 1
 
-    logger.info("Done. Success: %d, Failed: %d", success, failed)
+    logger.info(
+        "Done. Success: %d, Not yet published: %d, Failed: %d",
+        success,
+        not_published,
+        failed,
+    )
+    if failed:
+        raise RuntimeError(
+            f"{failed} month(s) failed to download (network/HTTP errors) - "
+            "see logs above for details"
+        )
 
 if __name__ == "__main__":
     main()

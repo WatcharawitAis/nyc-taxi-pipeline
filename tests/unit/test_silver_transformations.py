@@ -1,10 +1,10 @@
-"""Unit tests for the composed silver_pipeline function in
-src/pipeline/silver/silver_pipelines.py.
+"""Unit tests for the composed yellow_taxi_silver_transformation function in
+src/pipeline/yellow_taxi/silver/silver_transformations.py.
 
 The individual utility functions it composes (calculate_trip_duration,
 calculate_avg_speed, extract_time_features, extract_year_month_from_filename)
 are unit-tested on their own in test_calculations.py/test_transformations.py.
-This test instead checks that the composed pipeline wires them together
+This test instead checks that the composed transformation wires them together
 correctly, end to end.
 
 Business-rule filtering (fare/distance/duration > 0, dropoff after pickup)
@@ -22,11 +22,13 @@ from pyspark.sql.types import (
     TimestampType,
 )
 
-from src.pipeline.silver.silver_pipelines import silver_pipeline
+from src.pipeline.yellow_taxi.silver.silver_transformations import (
+    yellow_taxi_silver_transformation,
+)
 
 
-class TestSilverPipeline:
-    """Test the composed real-TLC-data silver pipeline (silver_yellow_tripdata)"""
+class TestYellowTaxiSilverTransformation:
+    """Test the composed real-TLC-data silver transformation (silver_yellow_tripdata)"""
 
     def _sample_df(self, spark):
         schema = StructType(
@@ -54,13 +56,12 @@ class TestSilverPipeline:
             ),
         ]
         df = spark.createDataFrame(data, schema)
-        # Add _metadata.file_path for year/month extraction
+        # Add _source_file for year/month extraction (the bronze-persisted
+        # copy of _metadata.file_path - see bronze_transformations.py)
         df = df.withColumn(
-            "_metadata",
-            F.struct(
-                F.lit(
-                    "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-01.parquet"
-                ).alias("file_path")
+            "_source_file",
+            F.lit(
+                "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-01.parquet"
             ),
         )
         return df
@@ -70,7 +71,7 @@ class TestSilverPipeline:
         tag _processed_at, and not drop any rows itself"""
         df = self._sample_df(spark)
 
-        result = silver_pipeline(df)
+        result = yellow_taxi_silver_transformation(df)
 
         assert result.count() == 2  # no filtering happens in this function
         for col in (
@@ -98,15 +99,13 @@ class TestSilverPipeline:
             ["tpep_pickup_datetime", "tpep_dropoff_datetime", "trip_distance", "fare_amount"],
         )
         df = df.withColumn(
-            "_metadata",
-            F.struct(
-                F.lit(
-                    "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-03.parquet"
-                ).alias("file_path")
+            "_source_file",
+            F.lit(
+                "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-03.parquet"
             ),
         )
 
-        result = silver_pipeline(df)
+        result = yellow_taxi_silver_transformation(df)
         row = result.collect()[0]
 
         assert row.trip_year == 2026

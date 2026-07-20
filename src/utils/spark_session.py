@@ -37,7 +37,7 @@ def get_required_conf(key: str, spark_session: SparkSession = None) -> str:
     """
     if spark_session is None:
         spark_session = get_spark_session()
-    
+
     try:
         value = spark_session.conf.get(key)
         return value

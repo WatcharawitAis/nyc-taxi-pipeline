@@ -2,9 +2,10 @@
 # Mocks a believable historical ingestion/processing timeline on
 # bronze_yellow_tripdata / silver_yellow_tripdata for quality-dashboard demo
 # purposes only. Run this once after backfilling the real TLC months via
-# nyc_taxi_pipeline. Deliberately NOT part of the pipeline itself: production
-# ingestion should always use the real current_timestamp() (see
-# bronze_pipeline()/silver_pipeline()); faking a spread-out timeline
+# yellow_taxi_pipeline. Deliberately NOT part
+# of the pipeline itself: production ingestion should always use the real
+# current_timestamp() (see yellow_taxi_bronze_transformation()/
+# yellow_taxi_silver_transformation()); faking a spread-out timeline
 # is a one-off demo concern, not something the pipeline should fabricate on
 # every run.
 

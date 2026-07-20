@@ -19,11 +19,9 @@ class TestExtractYearMonthFromFilename:
         """Should extract year and month from valid filename pattern"""
         df = spark.createDataFrame([(1,)], ["id"])
         df = df.withColumn(
-            "_metadata",
-            F.struct(
-                F.lit(
-                    "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-03.parquet"
-                ).alias("file_path")
+            "_source_file",
+            F.lit(
+                "/Volumes/biap_dev/landing/nyc-yellow-taxi-files/2026/yellow_tripdata_2026-03.parquet"
             ),
         )
 
@@ -37,12 +35,7 @@ class TestExtractYearMonthFromFilename:
         """Should extract different year/month combinations correctly"""
         df = spark.createDataFrame([(1,)], ["id"])
         df = df.withColumn(
-            "_metadata",
-            F.struct(
-                F.lit(
-                    "/some/other/path/yellow_tripdata_2025-12.parquet"
-                ).alias("file_path")
-            ),
+            "_source_file", F.lit("/some/other/path/yellow_tripdata_2025-12.parquet")
         )
 
         result = extract_year_month_from_filename(df)
@@ -54,10 +47,7 @@ class TestExtractYearMonthFromFilename:
     def test_invalid_filename_returns_null(self, spark):
         """Should return NULL for files that don't match the pattern"""
         df = spark.createDataFrame([(1,)], ["id"])
-        df = df.withColumn(
-            "_metadata",
-            F.struct(F.lit("/some/invalid/file.parquet").alias("file_path")),
-        )
+        df = df.withColumn("_source_file", F.lit("/some/invalid/file.parquet"))
 
         result = extract_year_month_from_filename(df)
         row = result.collect()[0]

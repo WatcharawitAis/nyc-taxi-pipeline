@@ -1,27 +1,25 @@
 resources:
   pipelines:
-    yellow_taxi_pipeline:
-      name: NYC Yellow Taxi Pipeline - ${bundle.target}
+    nyc_taxi_gold_pipeline:
+      name: NYC Taxi Gold Pipeline - ${bundle.target}
 
       # Unity Catalog configuration
       catalog: ${var.catalog}
-      schema: ${var.bronze_schema}
+      schema: ${var.gold_schema}
 
       configuration:
         bronze_schema: ${var.bronze_schema}
         silver_schema: ${var.silver_schema}
+        gold_schema: ${var.gold_schema}
         catalog: ${var.catalog}
-        landing_schema: ${var.landing_schema}
-        landing_volume: ${var.landing_volume}
 
       libraries:
         - file:
-            path: ../src/pipeline/yellow_taxi/yellow_taxi_pipeline.py
+            path: ../src/pipeline/gold/nyc_taxi_gold_layer.py
 
       environment:
         dependencies:
           - ../dist/*.whl
-          - databricks-labs-dqx==0.8.0
 
       serverless: true
       photon: true

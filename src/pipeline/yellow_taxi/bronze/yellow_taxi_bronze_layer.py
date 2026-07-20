@@ -2,8 +2,10 @@
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
 
-from src.pipeline.yellow_taxi.bronze.bronze_transformations import bronze_yellow_taxi_transformation
-from src.utils.spark_session import get_spark_session, get_required_conf
+from src.pipeline.yellow_taxi.bronze.bronze_transformations import (
+    yellow_taxi_bronze_transformation,
+)
+from src.utils.spark_session import get_required_conf, get_spark_session
 
 SPARK = get_spark_session()
 CATALOG: str = get_required_conf("catalog", SPARK)
@@ -25,8 +27,8 @@ def bronze_yellow_tripdata() -> DataFrame:
     """Incrementally reads new yellow_tripdata_YYYY-MM.parquet files from
     LANDING_VOLUME_PATH via Auto Loader."""
     df = (
-        spark.readStream.format("cloudFiles")
+        SPARK.readStream.format("cloudFiles")
         .option("cloudFiles.format", "parquet")
         .load(LANDING_VOLUME_PATH)
     )
-    return bronze_yellow_taxi_transformation(df)
+    return yellow_taxi_bronze_transformation(df)

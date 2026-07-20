@@ -11,13 +11,16 @@ def extract_year_month_from_filename(df: DataFrame) -> DataFrame:
     """Extracts trip_year and trip_month from the source file path.
 
     Args:
-        df: Input DataFrame with _metadata.file_path column (Spark file metadata).
+        df: Input DataFrame with a _source_file column (the bronze-persisted
+            copy of Spark's _metadata.file_path - _metadata itself is only
+            available while reading directly from files, not from a Delta
+            table downstream, so it can't be read here).
 
     Returns:
         DataFrame with trip_year (int) and trip_month (int) columns added.
         Values are NULL if the filename doesn't match the expected pattern.
     """
-    file_path = F.col("_metadata.file_path")
+    file_path = F.col("_source_file")
     year = F.regexp_extract(file_path, FILENAME_YEAR_MONTH_PATTERN, 1)
     month = F.regexp_extract(file_path, FILENAME_YEAR_MONTH_PATTERN, 2)
 

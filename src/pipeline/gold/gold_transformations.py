@@ -1,11 +1,31 @@
-"""Gold Pipelines for real NYC TLC (yellow_tripdata) data."""
+"""Gold transformation logic for real NYC TLC (yellow_tripdata) data."""
 
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 from src.utils.transformations import convert_day_number_to_name
 
-def monthly_trip_metrics_pipeline(df: DataFrame) -> DataFrame:
+
+def filter_verified_trips(df: DataFrame) -> DataFrame:
+    """Filters silver_yellow_tripdata down to rows that passed every DQX check.
+
+    Args:
+        df: silver_yellow_tripdata, unfiltered - every row still carries its
+            _errors/_warnings DQX check result columns.
+
+    Returns:
+        Only the rows with no _errors/_warnings, with those columns dropped.
+        Applied inline by each gold aggregation rather than reading a
+        separately materialized "verified_trips" table, so a passing DQX
+        batch isn't duplicated into extra storage on top of
+        silver_yellow_tripdata.
+    """
+    return df.where(df["_errors"].isNull() & df["_warnings"].isNull()).drop(
+        "_errors", "_warnings"
+    )
+
+
+def monthly_trip_metrics_transformation(df: DataFrame) -> DataFrame:
     """Aggregates real trip data by trip_year/trip_month.
 
     Args:
@@ -28,7 +48,7 @@ def monthly_trip_metrics_pipeline(df: DataFrame) -> DataFrame:
     )
 
 
-def pickup_zone_metrics_pipeline(df: DataFrame) -> DataFrame:
+def pickup_zone_metrics_transformation(df: DataFrame) -> DataFrame:
     """Aggregates real trip data by pickup zone (PULocationID).
 
     Args:
@@ -48,7 +68,7 @@ def pickup_zone_metrics_pipeline(df: DataFrame) -> DataFrame:
     )
 
 
-def hourly_demand_heatmap_pipeline(df: DataFrame) -> DataFrame:
+def hourly_demand_heatmap_transformation(df: DataFrame) -> DataFrame:
     """Aggregates real trip data by pickup_day_of_week x pickup_hour.
 
     Args:
@@ -70,7 +90,7 @@ def hourly_demand_heatmap_pipeline(df: DataFrame) -> DataFrame:
     )
 
 
-def data_quality_trend_pipeline(bronze_df: DataFrame, silver_df: DataFrame) -> DataFrame:
+def data_quality_trend_transformation(bronze_df: DataFrame, silver_df: DataFrame) -> DataFrame:
     """Aggregates ingestion volume vs. DQX pass/fail rate by trip_year/trip_month.
 
     Args:

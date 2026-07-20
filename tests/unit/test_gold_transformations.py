@@ -1,4 +1,4 @@
-"""Unit tests for src/pipeline/gold/gold_pipelines.py"""
+"""Unit tests for src/pipeline/gold/gold_transformations.py"""
 
 from pyspark.sql.types import (
     DoubleType,
@@ -8,15 +8,55 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from src.pipeline.gold.gold_pipelines import (
-    data_quality_trend_pipeline,
-    hourly_demand_heatmap_pipeline,
-    monthly_trip_metrics_pipeline,
-    pickup_zone_metrics_pipeline,
+from src.pipeline.gold.gold_transformations import (
+    data_quality_trend_transformation,
+    filter_verified_trips,
+    hourly_demand_heatmap_transformation,
+    monthly_trip_metrics_transformation,
+    pickup_zone_metrics_transformation,
 )
 
 
-class TestMonthlyTripMetricsPipeline:
+class TestFilterVerifiedTrips:
+    """Test filter_verified_trips (applied inline by each gold table instead
+    of reading a separately materialized verified_trips table)"""
+
+    def test_keeps_only_rows_with_no_errors_or_warnings(self, spark):
+        schema = StructType(
+            [
+                StructField("id", IntegerType(), True),
+                StructField("_errors", StringType(), True),
+                StructField("_warnings", StringType(), True),
+            ]
+        )
+        data = [
+            (1, None, None),
+            (2, "fare_amount_is_positive", None),
+            (3, None, "trip_distance_is_positive"),
+        ]
+        df = spark.createDataFrame(data, schema)
+
+        result = filter_verified_trips(df)
+
+        assert [row.id for row in result.collect()] == [1]
+
+    def test_drops_errors_and_warnings_columns(self, spark):
+        schema = StructType(
+            [
+                StructField("id", IntegerType(), True),
+                StructField("_errors", StringType(), True),
+                StructField("_warnings", StringType(), True),
+            ]
+        )
+        df = spark.createDataFrame([(1, None, None)], schema)
+
+        result = filter_verified_trips(df)
+
+        assert "_errors" not in result.columns
+        assert "_warnings" not in result.columns
+
+
+class TestMonthlyTripMetricsTransformation:
     """Test monthly_trip_metrics (timeline view)"""
 
     def test_aggregates_by_year_month(self, spark):
@@ -37,7 +77,7 @@ class TestMonthlyTripMetricsPipeline:
         ]
         df = spark.createDataFrame(data, schema)
 
-        result = monthly_trip_metrics_pipeline(df).collect()
+        result = monthly_trip_metrics_transformation(df).collect()
 
         assert len(result) == 2
         jan = result[0]
@@ -66,12 +106,12 @@ class TestMonthlyTripMetricsPipeline:
         ]
         df = spark.createDataFrame(data, schema)
 
-        months = [row.trip_month for row in monthly_trip_metrics_pipeline(df).collect()]
+        months = [row.trip_month for row in monthly_trip_metrics_transformation(df).collect()]
 
         assert months == [1, 3, 5]
 
 
-class TestPickupZoneMetricsPipeline:
+class TestPickupZoneMetricsTransformation:
     """Test pickup_zone_metrics (ride demand by zone)"""
 
     def test_aggregates_by_zone_sorted_by_rides_desc(self, spark):
@@ -89,7 +129,7 @@ class TestPickupZoneMetricsPipeline:
         ]
         df = spark.createDataFrame(data, schema)
 
-        result = pickup_zone_metrics_pipeline(df).collect()
+        result = pickup_zone_metrics_transformation(df).collect()
 
         assert result[0].pickup_location_id == 100  # 2 rides, sorted first
         assert result[0].total_rides == 2
@@ -98,7 +138,7 @@ class TestPickupZoneMetricsPipeline:
         assert result[1].total_rides == 1
 
 
-class TestHourlyDemandHeatmapPipeline:
+class TestHourlyDemandHeatmapTransformation:
     """Test hourly_demand_heatmap (day-of-week x hour grid)"""
 
     def test_aggregates_by_day_and_hour_with_readable_name(self, spark):
@@ -117,7 +157,7 @@ class TestHourlyDemandHeatmapPipeline:
         ]
         df = spark.createDataFrame(data, schema)
 
-        result = hourly_demand_heatmap_pipeline(df).collect()
+        result = hourly_demand_heatmap_transformation(df).collect()
 
         assert result[0].pickup_day_of_week == 1
         assert result[0].pickup_hour == 8
@@ -126,7 +166,7 @@ class TestHourlyDemandHeatmapPipeline:
         assert result[0].avg_fare == 15.0
 
 
-class TestDataQualityTrendPipeline:
+class TestDataQualityTrendTransformation:
     """Test data_quality_trend (bronze volume vs. silver valid/quarantine)"""
 
     def _bronze_df(self, spark, rows):
@@ -160,7 +200,7 @@ class TestDataQualityTrendPipeline:
             spark, [(2026, 1, None)] * 8 + [(2026, 1, "fare_amount_is_positive")] * 2
         )
 
-        result = data_quality_trend_pipeline(bronze_df, silver_df).collect()[0]
+        result = data_quality_trend_transformation(bronze_df, silver_df).collect()[0]
 
         assert result.total_records == 10
         assert result.valid_count == 8
@@ -172,7 +212,7 @@ class TestDataQualityTrendPipeline:
         bronze_df = self._bronze_df(spark, [(2026, 1)] * 5)
         silver_df = self._silver_df(spark, [(2026, 1, None)] * 5)
 
-        result = data_quality_trend_pipeline(bronze_df, silver_df).collect()[0]
+        result = data_quality_trend_transformation(bronze_df, silver_df).collect()[0]
 
         assert result.quarantine_count == 0
         assert result.quarantine_rate_pct == 0.0
