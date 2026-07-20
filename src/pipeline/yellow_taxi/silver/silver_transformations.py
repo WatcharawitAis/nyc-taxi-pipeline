@@ -3,14 +3,14 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-from src.pipeline.utils.calculations import calculate_avg_speed, calculate_trip_duration
-from src.pipeline.utils.transformations import (
+from src.utils.calculations import calculate_avg_speed, calculate_trip_duration
+from src.utils.transformations import (
     extract_time_features,
     extract_year_month_from_filename,
 )
 
 
-def silver_pipeline(df: DataFrame) -> DataFrame:
+def silver_yellow_taxi_transformation(df: DataFrame) -> DataFrame:
     """Silver Pipeline Logic for real TLC data (bronze_yellow_tripdata).
 
     Args:

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pyspark.sql.types import StructField, StructType, TimestampType
 
-from src.pipeline.utils.calculations import (
+from src.utils.calculations import (
     calculate_avg_speed,
     calculate_trip_duration,
 )

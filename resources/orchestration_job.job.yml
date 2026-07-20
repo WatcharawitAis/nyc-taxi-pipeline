@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    orchestration_job:
+      name: ETL-Orchestration-Pipeline - ${bundle.target}
+      environments:
+        - environment_key: test_env
+          spec:
+            environment_version: '5'
+            dependencies:
+              - dbutils
+              - pytest
+              - ../dist/*.whl
+      
+      # # Optional schedule trigger
+      # schedule:
+      #   quartz_cron_expression: "0 0 12 * * ?"
+      #   timezone_id: "UTC"
+
+      tasks:
+        - task_key: ingest_task
+          environment_key: test_env
+          spark_python_task:
+            python_file: ../src/ingest/yellow_taxi_data_download.py
+
+        - task_key: nyc_yellow_taxi_pipeline
+          depends_on:
+            - task_key: ingest_task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.nyc_taxi_pipeline.id}

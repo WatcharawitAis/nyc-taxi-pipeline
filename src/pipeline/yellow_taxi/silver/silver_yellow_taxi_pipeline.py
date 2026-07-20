@@ -8,13 +8,13 @@ from databricks.sdk import WorkspaceClient
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
 
-from src.pipeline.silver.silver_pipelines import silver_pipeline
-from src.pipeline.utils.spark_session import SPARK as spark
-from src.pipeline.utils.spark_session import get_required_conf
+from src.pipeline.yellow_taxi.silver.silver_transformations import silver_yellow_taxi_transformation
+from src.utils.spark_session import get_required_conf, get_spark_session
 
-CATALOG: str = get_required_conf("catalog")
-SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
-BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema")
+SPARK = get_spark_session()
+CATALOG: str = get_required_conf("catalog", SPARK)
+SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema", SPARK)
+BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema", SPARK)
 
 CHECKS_FILE = files("src").joinpath("checks", "silver_yellow_tripdata_checks.yml")
 if not CHECKS_FILE.is_file():
@@ -36,7 +36,7 @@ def silver_yellow_tripdata() -> DataFrame:
     df = spark.readStream.table(
         f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata"
     )
-    transformed_df = silver_pipeline(df)
+    transformed_df = silver_yellow_taxi_transformation(df)
     checks = DQ_ENGINE.load_checks(
         config=FileChecksStorageConfig(location=str(CHECKS_FILE))
     )

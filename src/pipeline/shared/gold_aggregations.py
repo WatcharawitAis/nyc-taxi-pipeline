@@ -3,8 +3,7 @@
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-from src.pipeline.utils.transformations import convert_day_number_to_name
-
+from src.utils.transformations import convert_day_number_to_name
 
 def monthly_trip_metrics_pipeline(df: DataFrame) -> DataFrame:
     """Aggregates real trip data by trip_year/trip_month.

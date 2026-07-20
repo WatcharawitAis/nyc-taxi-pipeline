@@ -36,7 +36,6 @@ variables:
 # Include resource files
 include:
   - resources/*.yml
-
 # Development target (default)
 targets:
   dev:

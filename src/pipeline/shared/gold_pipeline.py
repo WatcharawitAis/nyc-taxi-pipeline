@@ -9,12 +9,13 @@ from src.pipeline.gold.gold_pipelines import (
     monthly_trip_metrics_pipeline,
     pickup_zone_metrics_pipeline,
 )
-from src.pipeline.utils.spark_session import get_required_conf
+from src.utils.spark_session import get_required_conf, get_spark_session
 
-CATALOG: str = get_required_conf("catalog")
-GOLD_SCHEMA_NAME: str = get_required_conf("gold_schema")
-SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema")
-BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema")
+SPARK = get_spark_session()
+CATALOG: str = get_required_conf("catalog", SPARK)
+GOLD_SCHEMA_NAME: str = get_required_conf("gold_schema", SPARK)
+SILVER_SCHEMA_NAME: str = get_required_conf("silver_schema", SPARK)
+BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema", SPARK)
 
 
 @dp.table(

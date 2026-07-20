@@ -2,15 +2,16 @@
 from pyspark import pipelines as dp
 from pyspark.sql import DataFrame
 
-from src.pipeline.bronze.bronze_pipelines import bronze_pipeline
-from src.pipeline.utils.spark_session import SPARK as spark
-from src.pipeline.utils.spark_session import get_required_conf
+from src.pipeline.yellow_taxi.bronze.bronze_transformations import bronze_yellow_taxi_transformation
+from src.utils.spark_session import get_spark_session, get_required_conf
 
-CATALOG: str = get_required_conf("catalog")
-BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema")
-LANDING_SCHEMA: str = get_required_conf("landing_schema")
-LANDING_VOLUME: str = get_required_conf("landing_volume")
+SPARK = get_spark_session()
+CATALOG: str = get_required_conf("catalog", SPARK)
+BRONZE_SCHEMA_NAME: str = get_required_conf("bronze_schema", SPARK)
+LANDING_SCHEMA: str = get_required_conf("landing_schema", SPARK)
+LANDING_VOLUME: str = get_required_conf("landing_volume", SPARK)
 LANDING_VOLUME_PATH: str = f"/Volumes/{CATALOG}/{LANDING_SCHEMA}/{LANDING_VOLUME}"
+
 
 @dp.table(
     name=f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata",
@@ -28,4 +29,4 @@ def bronze_yellow_tripdata() -> DataFrame:
         .option("cloudFiles.format", "parquet")
         .load(LANDING_VOLUME_PATH)
     )
-    return bronze_pipeline(df)
+    return bronze_yellow_taxi_transformation(df)

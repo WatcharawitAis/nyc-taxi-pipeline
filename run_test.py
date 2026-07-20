@@ -10,7 +10,8 @@ sys.dont_write_bytecode = True
 
 if __name__ == "__main__":
     current_path = os.path.abspath("__file__")
-    tests_dir = os.path.dirname(current_path) + "/tests"
+    current_dir = os.path.dirname(current_path)
+    tests_dir = os.path.join(current_dir, "tests")
     exit_code = pytest.main([
         tests_dir,
         "--verbose",

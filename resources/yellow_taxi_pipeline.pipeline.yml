@@ -18,7 +18,7 @@ resources:
 
       libraries:
         - file:
-            path: ../src/pipeline/pipeline.py
+            path: ../src/pipeline/yellow_taxi/yellow_taxi_pipeline.py
 
       environment:
         dependencies:
