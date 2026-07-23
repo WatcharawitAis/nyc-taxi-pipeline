@@ -37,11 +37,12 @@ variables:
       non-empty - the pipeline/job notification APIs reject an `alerts` list
       paired with zero recipients.
     type: complex
-    default:
-      - watchaaq@ais.co.th
+    default: []
+
   alert_email_primary:
     description: Single email address subscribed to the data-quality SQL alert (Alerts V2 subscriptions take one recipient object per entry, not a plain list)
-    default: watchaaq@ais.co.th
+    default: []
+  
   schedule_pause_status:
     description: Whether the monthly orchestration_job schedule is active
     default: "PAUSED"
@@ -61,7 +62,7 @@ targets:
     variables:
       catalog: biap_dev
       pipeline_development: true
-      warehouse_id: 8261d83d59907973
+      
   
   # Staging target
   staging:

@@ -1,7 +1,8 @@
-"""Download missing NYC Yellow Taxi trip data files into a Databricks Volume.
+"""Shared logic for downloading missing NYC Taxi trip data files into a Databricks Volume.
 
 Scans the target volume for existing (year, month) parquet files, computes
-the gap up to the current month, and downloads whatever is missing.
+the gap up to the current month, and downloads whatever is missing. Used by
+the per-color entry points in src/ingest/ (e.g. yellow, green).
 """
 import logging
 import os
@@ -13,25 +14,19 @@ import requests
 from dateutil.relativedelta import relativedelta
 from pyspark.dbutils import DBUtils
 
-from src.utils.spark_session import get_required_conf, get_spark_session
-
-logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
-
-SPARK = get_spark_session()
-
-BASE_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year}-{month:02d}.parquet"
-CATALOG = get_required_conf("catalog", SPARK) or "biap_dev"
-SCHEMA = get_required_conf("landing_schema", SPARK) or "landing"
-VOLUMN_FOLDER = get_required_conf("landing_volume", SPARK) or "nyc-yellow-taxi-files"
-
-VOLUME_BASE_PATH = f"/Volumes/{CATALOG}/{SCHEMA}/{VOLUMN_FOLDER}"
-START_YEAR_MONTH = (2026, 1)
-
 
 YearMonth = tuple[int, int]
 
-def scan_existing_year_months(dbutils: DBUtils, volume_base_path: str) -> set[YearMonth]:
+DOWNLOADED = "downloaded"
+ALREADY_EXISTS = "already_exists"
+NOT_PUBLISHED = "not_published"
+FAILED = "failed"
+
+
+def scan_existing_year_months(
+    dbutils: DBUtils, volume_base_path: str, file_prefix: str
+) -> set[YearMonth]:
     """Return the set of (year, month) pairs with a valid parquet file already present."""
     now = datetime.now()
 
@@ -56,9 +51,9 @@ def scan_existing_year_months(dbutils: DBUtils, volume_base_path: str) -> set[Ye
             if f.size <= 0:
                 continue
             stem = f.name.removesuffix(".parquet")
-            if not stem.startswith("yellow_tripdata_"):
+            if not stem.startswith(file_prefix):
                 continue
-            year_str, _, month_str = stem.removeprefix("yellow_tripdata_").partition("-")
+            year_str, _, month_str = stem.removeprefix(file_prefix).partition("-")
             if not (year_str.isdigit() and month_str.isdigit()):
                 continue
             year, month = int(year_str), int(month_str)
@@ -71,7 +66,7 @@ def scan_existing_year_months(dbutils: DBUtils, volume_base_path: str) -> set[Ye
 
 def compute_missing_year_months(
     existing: set[YearMonth],
-    start: YearMonth = START_YEAR_MONTH,
+    start: YearMonth,
 ) -> list[YearMonth]:
     """List every (year, month) from the earliest known point through the current month not in `existing`.
 
@@ -95,13 +90,14 @@ def compute_missing_year_months(
     return missing
 
 
-DOWNLOADED = "downloaded"
-ALREADY_EXISTS = "already_exists"
-NOT_PUBLISHED = "not_published"
-FAILED = "failed"
-
-
-def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: int) -> str:
+def download_month(
+    dbutils: DBUtils,
+    volume_base_path: str,
+    year: int,
+    month: int,
+    base_url: str,
+    file_prefix: str,
+) -> str:
     """Download a single year-month parquet file into the volume.
 
     Returns one of DOWNLOADED, ALREADY_EXISTS, NOT_PUBLISHED (soft skip -
@@ -109,7 +105,7 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
     (a real error - timeout, unexpected HTTP status, network exception).
     """
     dest_dir = f"{volume_base_path}/{year}"
-    dest_path = f"{dest_dir}/yellow_tripdata_{year}-{month:02d}.parquet"
+    dest_path = f"{dest_dir}/{file_prefix}{year}-{month:02d}.parquet"
 
     try:
         existing = dbutils.fs.ls(dest_path)
@@ -119,7 +115,7 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
     except Exception:
         pass
 
-    url = BASE_URL.format(year=year, month=month)
+    url = base_url.format(year=year, month=month)
     try:
         head = requests.head(url, timeout=10)
         if head.status_code in (403, 404):
@@ -147,14 +143,24 @@ def download_month(dbutils: DBUtils, volume_base_path: str, year: int, month: in
         return FAILED
 
 
-def main() -> None:
-    spark = SPARK
+def run_download(
+    spark,
+    volume_base_path: str,
+    base_url: str,
+    file_prefix: str,
+    start_year_month: YearMonth,
+) -> None:
+    """Scan a volume for missing (year, month) files and download them all.
+
+    Shared entry point for every taxi-color ingest script; only the volume
+    path, source URL template, and file prefix differ between colors.
+    """
     dbutils = DBUtils(spark)
 
-    logger.info("Scanning %s for existing files...", VOLUME_BASE_PATH)
-    existing = scan_existing_year_months(dbutils, VOLUME_BASE_PATH)
+    logger.info("Scanning %s for existing files...", volume_base_path)
+    existing = scan_existing_year_months(dbutils, volume_base_path, file_prefix)
 
-    missing = compute_missing_year_months(existing)
+    missing = compute_missing_year_months(existing, start_year_month)
     if not missing:
         logger.info("No missing months, nothing to do.")
         return
@@ -163,7 +169,7 @@ def main() -> None:
     success, not_published, failed = 0, 0, 0
     for year, month in missing:
         time.sleep(random.uniform(3, 15))
-        result = download_month(dbutils, VOLUME_BASE_PATH, year, month)
+        result = download_month(dbutils, volume_base_path, year, month, base_url, file_prefix)
         if result in (DOWNLOADED, ALREADY_EXISTS):
             success += 1
         elif result == NOT_PUBLISHED:
@@ -182,6 +188,3 @@ def main() -> None:
             f"{failed} month(s) failed to download (network/HTTP errors) - "
             "see logs above for details"
         )
-
-if __name__ == "__main__":
-    main()

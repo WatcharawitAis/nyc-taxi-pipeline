@@ -19,8 +19,6 @@ LANDING_VOLUME_PATH: str = f"/Volumes/{CATALOG}/{LANDING_SCHEMA}/{LANDING_VOLUME
     name=f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata",
     comment=f"Real NYC TLC Yellow Taxi monthly files landed from {LANDING_VOLUME_PATH}. "
     "Real TLC schema (PULocationID/DOLocationID).",
-    # tpep_pickup_datetime/tpep_dropoff_datetime are TIMESTAMP_NTZ in the real
-    # TLC files; Delta requires this feature explicitly enabled on the table.
     table_properties={"delta.feature.timestampNtz": "supported"},
 )
 def bronze_yellow_tripdata() -> DataFrame:

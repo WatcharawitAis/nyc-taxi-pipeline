@@ -53,20 +53,3 @@ def hourly_demand_heatmap() -> DataFrame:
     """Gold Layer: real NYC TLC trip data aggregated by day-of-week x hour"""
     df = dp.read(f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata")
     return hourly_demand_heatmap_transformation(filter_verified_trips(df))
-
-
-@dp.table(
-    name=f"{CATALOG}.{GOLD_SCHEMA_NAME}.data_quality_trend",
-    comment="Ingestion volume vs. DQX pass/fail rate by trip_year/trip_month for real "
-    "NYC TLC trip data - the quality-timeline view used for monitoring.",
-)
-def data_quality_trend() -> DataFrame:
-    """Gold Layer: bronze volume vs. silver valid/quarantine counts, by month"""
-    # bronze_yellow_tripdata only has _source_file, not trip_year/trip_month -
-    # those are parsed from it later, in silver. Parse them here too so
-    # data_quality_trend_transformation can group bronze volume by month.
-    bronze_df = extract_year_month_from_filename(
-        dp.read(f"{CATALOG}.{BRONZE_SCHEMA_NAME}.bronze_yellow_tripdata")
-    )
-    silver_df = dp.read(f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata")
-    return data_quality_trend_transformation(bronze_df, silver_df)

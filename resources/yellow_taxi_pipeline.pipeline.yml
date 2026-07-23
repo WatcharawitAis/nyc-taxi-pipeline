@@ -28,9 +28,3 @@ resources:
       continuous: false
       development: ${var.pipeline_development}
 
-      notifications:
-        - alerts:
-            - on-update-failure
-            - on-update-fatal-failure
-            - on-flow-failure
-          email_recipients: ${var.alert_email}

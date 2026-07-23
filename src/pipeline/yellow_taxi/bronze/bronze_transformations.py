@@ -1,7 +1,6 @@
 """Bronze Pipeline
 
 Bronze layer transformation logic for raw data ingestion.
-No transformations applied - preserves original data format.
 """
 
 from pyspark.sql import DataFrame

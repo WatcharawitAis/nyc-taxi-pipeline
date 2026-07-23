@@ -9,7 +9,6 @@ from src.utils.transformations import (
     extract_year_month_from_filename,
 )
 
-
 def yellow_taxi_silver_transformation(df: DataFrame) -> DataFrame:
     """Silver Pipeline Logic for real TLC data (bronze_yellow_tripdata).
 

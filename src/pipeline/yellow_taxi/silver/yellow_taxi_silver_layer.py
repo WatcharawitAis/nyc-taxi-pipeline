@@ -44,29 +44,28 @@ def silver_yellow_tripdata() -> DataFrame:
     )
     return DQ_ENGINE.apply_checks_by_metadata(transformed_df, checks)
 
-
-@dp.temporary_view(
-    name="verified_trips",
-    comment="silver_yellow_tripdata rows that passed all DQX checks. Not "
-    "materialized (no extra storage) - only usable within this pipeline. "
-    "gold_pipeline is a separate pipeline, so it re-applies this same filter "
-    "itself (gold_transformations.filter_verified_trips) on silver_yellow_tripdata "
-    "directly instead of reading this view.",
+@dp.table(
+    name=f"{CATALOG}.{SILVER_SCHEMA_NAME}.validated_silver_yellow_tripdata",
+    comment="Verified silver_yellow_tripdata row only",
+    table_properties={"delta.feature.timestampNtz": "supported"},
 )
-def verified_trips() -> DataFrame:
-    """silver_yellow_tripdata filtered to rows with no DQX errors/warnings"""
-    df = dp.read(f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata")
-    return df.where(df["_errors"].isNull() & df["_warnings"].isNull()).drop(
-        "_errors", "_warnings"
+def validated_silver_yellow_tripdata() -> DataFrame:
+    """Returns silver_yellow_tripdata with only rows that passed all DQX checks."""
+    df = SPARK.readStream.table(
+        f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata"
     )
+    return df.filter(df["_errors"].isNull() & df["_warnings"].isNull())
 
-@dp.temporary_view(
-    name="quarantined_trips",
-    comment="silver_yellow_tripdata rows that failed at least one DQX check. "
-    "Not materialized - query silver_yellow_tripdata's _errors/_warnings "
-    "columns directly from outside this pipeline instead.",
+@dp.table(
+    name=f"{CATALOG}.{SILVER_SCHEMA_NAME}.quarantine_silver_yellow_tripdata",
+    comment="Quarantined silver_yellow_tripdata rows that failed DQX checks",
+    table_properties={"delta.feature.timestampNtz": "supported"},
 )
-def quarantined_trips() -> DataFrame:
-    """silver_yellow_tripdata filtered to rows with a DQX error or warning"""
-    df = dp.read(f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata")
-    return df.where(df["_errors"].isNotNull() | df["_warnings"].isNotNull())
+def quarantine_silver_yellow_tripdata() -> DataFrame:
+    """Returns silver_yellow_tripdata with only rows that not passed all DQX checks."""
+    df = SPARK.readStream.table(
+        f"{CATALOG}.{SILVER_SCHEMA_NAME}.silver_yellow_tripdata"
+    )
+    return df.filter(df["_errors"].isNotNull() | df["_warnings"].isNotNull())
+
+

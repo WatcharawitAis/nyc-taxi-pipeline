@@ -4,12 +4,11 @@ resources:
       name: ETL-Orchestration-Pipeline - ${bundle.target}
       max_concurrent_runs: 1
       environments:
-        - environment_key: test_env
+        - environment_key: task_env
           spec:
             environment_version: "5"
             dependencies:
               - dbutils
-              - pytest
               - ../dist/*.whl
 
       email_notifications:
@@ -20,19 +19,19 @@ resources:
         no_alert_for_canceled_runs: false
 
       tasks:
-        - task_key: ingest_task
-          environment_key: test_env
+        - task_key: yellow_taxi_ingest_task
+          environment_key: task_env
           spark_python_task:
             python_file: ../src/ingest/yellow_taxi_data_download.py
 
-        - task_key: yellow_taxi_task
+        - task_key: yellow_taxi_bronze_to_silver
           depends_on:
-            - task_key: ingest_task
+            - task_key: yellow_taxi_ingest_task
           pipeline_task:
             pipeline_id: ${resources.pipelines.yellow_taxi_pipeline.id}
 
         - task_key: gold_task
           depends_on:
-            - task_key: yellow_taxi_task
+            - task_key: yellow_taxi_bronze_to_silver
           pipeline_task:
             pipeline_id: ${resources.pipelines.nyc_taxi_gold_pipeline.id}
